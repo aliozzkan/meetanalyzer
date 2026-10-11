@@ -2,6 +2,8 @@ import { ArrowLeftIcon } from 'lucide-react'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import { RecordingControls } from '../recording/recording-controls'
+import { useRecorder } from '../recording/use-recorder'
 import { formatMeetingDate } from './format-date'
 import { LANGUAGE_LABELS, STATE_LABELS } from './labels'
 import { MeetingActions } from './meeting-actions'
@@ -13,10 +15,10 @@ interface Props {
   onBack: () => void
 }
 
-// İskelet: Recording (issue 03), Transcription (09) ve Correction (10) alanları sonraki
-// issue'larda bu ekrana eklenir.
+// Transcription (issue 09) ve Correction (10) alanları sonraki issue'larda bu ekrana eklenir.
 export function MeetingDetail({ api, meetingId, onBack }: Props): React.JSX.Element {
   const meeting = api.meetings.find((candidate) => candidate.id === meetingId)
+  const recorder = useRecorder(meetingId, api.refresh)
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,6 +42,7 @@ export function MeetingDetail({ api, meetingId, onBack }: Props): React.JSX.Elem
               <MeetingActions
                 meeting={meeting}
                 onClose={api.close}
+                closeDisabled={recorder.state !== 'idle'}
                 onRemove={async (id) => {
                   if (await api.remove(id)) onBack()
                 }}
@@ -51,10 +54,13 @@ export function MeetingDetail({ api, meetingId, onBack }: Props): React.JSX.Elem
             <CardHeader>
               <CardTitle>Kayıtlar</CardTitle>
             </CardHeader>
-            <CardContent>
-              {meeting.recordingCount === 0
-                ? 'Bu Meeting’de henüz kayıt yok. Kayıt alma bir sonraki adımda eklenecek.'
-                : `${meeting.recordingCount} kayıt`}
+            <CardContent className="flex flex-col gap-4">
+              <p>
+                {meeting.recordingCount === 0
+                  ? 'Bu Meeting’de henüz kayıt yok.'
+                  : `${meeting.recordingCount} kayıt`}
+              </p>
+              {meeting.state === 'recording' && <RecordingControls recorder={recorder} />}
             </CardContent>
           </Card>
         </>

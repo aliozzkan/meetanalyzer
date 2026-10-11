@@ -53,9 +53,18 @@ const SELECT_MEETING = `
   FROM meetings m
 `
 
+// Meeting servisinin Recording servisinden bilmesi gereken iki şey (bkz. src/main/recordings).
+export interface ActiveRecordings {
+  hasActive: (meetingId: string) => boolean
+  abortMeeting: (meetingId: string) => void
+}
+
+const NO_ACTIVE_RECORDINGS: ActiveRecordings = { hasActive: () => false, abortMeeting: () => {} }
+
 export interface MeetingServiceOptions {
   db: Db
   recordingsDir: string
+  activeRecordings?: ActiveRecordings
   now?: () => number
 }
 
@@ -71,6 +80,7 @@ export interface MeetingService {
 export function createMeetingService({
   db,
   recordingsDir,
+  activeRecordings = NO_ACTIVE_RECORDINGS,
   now = Date.now
 }: MeetingServiceOptions): MeetingService {
   function get(id: string): MeetingSummary {
@@ -133,6 +143,12 @@ export function createMeetingService({
     if (meeting.state !== 'recording') {
       throw new MeetingError('invalid-transition', 'Yalnızca devam eden Meeting kapatılabilir.')
     }
+    if (activeRecordings.hasActive(id)) {
+      throw new MeetingError(
+        'recording-active',
+        'Sürmekte olan kaydı durdurmadan Meeting kapatılamaz.'
+      )
+    }
     return transition(id, 'closed')
   }
 
@@ -143,6 +159,8 @@ export function createMeetingService({
     if (meeting.state === 'approved') {
       throw new MeetingError('approved-immutable', 'Onaylanmış Meeting silinemez.')
     }
+    // Yazıcı, dosyalar ve satırlar silinmeden önce kapatılır; aksi halde silinen klasöre yazmaya devam eder.
+    activeRecordings.abortMeeting(id)
     db.prepare('DELETE FROM meetings WHERE id = ?').run(id)
     rmSync(join(recordingsDir, id), { recursive: true, force: true })
   }

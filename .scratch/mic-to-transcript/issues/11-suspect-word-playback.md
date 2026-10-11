@@ -15,3 +15,7 @@ Spec: [../spec.md](../spec.md) → "5. Correction"
 
 - [ ] Tıklanan kelime çalınan pencerenin içinde duyulur.
 - [ ] Özel protokol `recordings/` dışındaki yolları reddeder (test).
+
+## Comments
+
+**2026-10-11 (issue 03'ten):** `recording_channels.file_path` `recordingsDir`'e göreli saklanır; özel protokol bunu `recordingsDir` ile birleştirip sonucun `recordingsDir` içinde kaldığını doğrulamalı.

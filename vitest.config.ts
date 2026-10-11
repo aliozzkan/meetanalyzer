@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config'
 // (better-sqlite3) Electron ABI'sine göre derlenir ve düz node ile yüklenemez.
 export default defineConfig({
   test: {
-    include: ['src/main/**/*.test.ts'],
+    include: ['src/main/**/*.test.ts', 'src/shared/**/*.test.ts'],
     environment: 'node'
   }
 })

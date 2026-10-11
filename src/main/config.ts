@@ -3,18 +3,8 @@
 
 // Varsayılan Language (docs/tuning.md) renderer ile paylaşıldığı için src/shared/meeting.ts'te durur.
 
-// docs/tuning.md → Ses formatı (ADR-0003)
-export const AUDIO_FORMAT = {
-  sampleRate: 16_000,
-  channels: 1,
-  bitsPerSample: 16
-} as const
-
-// docs/tuning.md → PCM parça süresi
-export const PCM_CHUNK_MS = 5_000
-
-// docs/tuning.md → Sessiz mikrofon uyarısı
-export const SILENT_MIC_WARNING_MS = 10_000
+// Ses sabitleri (format, parça süresi, sessiz mikrofon uyarısı) renderer ile paylaşıldığı için
+// src/shared/audio.ts'te durur.
 
 // docs/tuning.md → Suspect Word eşiği (ADR-0002). Kelimenin güveni,
 // token olasılıklarının minimumudur; bu değerin altındaysa Suspect Word'dür.

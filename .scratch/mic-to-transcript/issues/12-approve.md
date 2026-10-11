@@ -20,3 +20,5 @@ Spec: [../spec.md](../spec.md) → "6. Approve"
 ## Comments
 
 **2026-10-11 (issue 02 review'undan):** Silme koruması şu an `state === 'approved'`. Yaşam döngüsü Awaiting Analysis / Completed durumlarını da kapsadığında bu guard "Approved ve sonrası" olacak şekilde genişletilmeli (Analysis dilimi).
+
+**2026-10-11 (issue 03'ten):** Ses silme sırasında `recording_channels.file_path` temizlenir; yol `recordingsDir`'e göredir (`<meetingId>/<recordingId>/mic.wav`).

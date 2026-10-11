@@ -5,6 +5,7 @@ import type { Language, MeetingResult, MeetingSummary } from '@shared/meeting'
 export interface MeetingsApi {
   meetings: MeetingSummary[]
   loaded: boolean
+  refresh: () => Promise<void>
   start: (language: Language) => Promise<MeetingSummary | undefined>
   close: (id: string) => Promise<void>
   remove: (id: string) => Promise<boolean>
@@ -46,6 +47,7 @@ export function useMeetings(): MeetingsApi {
   return {
     meetings,
     loaded,
+    refresh,
     start: async (language) => {
       const result = await act(window.api.meetings.start(language))
       return result.ok ? result.value : undefined

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { openDatabase, type Db } from '../db/database'
-import { createMeetingService, type MeetingService } from './meeting-service'
+import { createMeetingService, type ActiveRecordings, type MeetingService } from './meeting-service'
 
 // Her çağrıda ilerleyen sahte saat: zaman damgası testleri milisaniye şansına kalmasın.
 const tempDirs: string[] = []
@@ -11,7 +11,7 @@ afterEach(() => {
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-function setup(): {
+function setup(activeRecordings?: ActiveRecordings): {
   meetings: MeetingService
   db: Db
   recordingsDir: string
@@ -21,7 +21,12 @@ function setup(): {
   const recordingsDir = mkdtempSync(join(tmpdir(), 'meetanalyzing-recordings-'))
   tempDirs.push(recordingsDir)
   let time = 1_000
-  const meetings = createMeetingService({ db, recordingsDir, now: () => time })
+  const meetings = createMeetingService({
+    db,
+    recordingsDir,
+    activeRecordings,
+    now: () => time
+  })
   return { meetings, db, recordingsDir, tick: () => (time += 1_000) }
 }
 
@@ -192,5 +197,43 @@ describe('Meeting servisi', () => {
       expect.objectContaining({ code: 'invalid-input' })
     )
     expect(meetings.list()).toEqual([])
+  })
+
+  it('aktif Recording varken Meeting kapatılamaz', () => {
+    const active = new Set<string>()
+    const { meetings, db } = setup({
+      hasActive: (id) => active.has(id),
+      abortMeeting: (id) => active.delete(id)
+    })
+    const meeting = meetings.start('tr')
+    addRecording(db, meeting.id)
+    active.add(meeting.id)
+
+    expect(() => meetings.close(meeting.id)).toThrow(
+      expect.objectContaining({ code: 'recording-active' })
+    )
+    expect(meetings.get(meeting.id).state).toBe('recording')
+
+    active.delete(meeting.id)
+    expect(meetings.close(meeting.id).state).toBe('closed')
+  })
+
+  it('Meeting silinmeden önce aktif Recording durdurulur', () => {
+    const seenWhileAborting: string[] = []
+    const ref: { meetings?: MeetingService } = {}
+    const { meetings } = setup({
+      hasActive: () => true,
+      abortMeeting: (id) => {
+        // Silme henüz yapılmamış olmalı: kayıt yazıcısı veri hâlâ varken kapatılır.
+        seenWhileAborting.push(ref.meetings!.get(id).id)
+      }
+    })
+    ref.meetings = meetings
+    const meeting = meetings.start('tr')
+
+    meetings.remove(meeting.id)
+
+    expect(seenWhileAborting).toEqual([meeting.id])
+    expect(() => meetings.get(meeting.id)).toThrow(expect.objectContaining({ code: 'not-found' }))
   })
 })

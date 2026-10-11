@@ -1,12 +1,16 @@
-import { app, shell, BrowserWindow, dialog } from 'electron'
+import { app, shell, BrowserWindow, dialog, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { openDatabase, type Db } from './db/database'
 import { registerMeetingIpc } from './meetings/ipc'
 import { createMeetingService } from './meetings/meeting-service'
+import { requestMicrophoneAccess } from './recordings/microphone'
+import { registerRecordingIpc } from './recordings/ipc'
+import { createRecordingService, type RecordingService } from './recordings/recording-service'
 
 let db: Db | undefined
+let recordings: RecordingService | undefined
 
 function createWindow(): void {
   // Create the browser window.
@@ -25,6 +29,14 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
+
+  // Renderer'daki mikrofon yakalama sayfa yenilenince, pencere kapanınca ya da renderer çökünce yok olur;
+  // açık kalan Recording'ler düzgünce bitirilir (macOS'ta pencere kapanınca uygulama yaşamaya devam eder).
+  mainWindow.webContents.on('did-start-navigation', (details) => {
+    if (details.isMainFrame && !details.isSameDocument) recordings?.stopAll()
+  })
+  mainWindow.webContents.on('render-process-gone', () => recordings?.stopAll())
+  mainWindow.on('closed', () => recordings?.stopAll())
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
@@ -55,8 +67,17 @@ app.whenReady().then(() => {
     return
   }
 
-  registerMeetingIpc(
-    createMeetingService({ db, recordingsDir: join(app.getPath('userData'), 'recordings') })
+  const recordingsDir = join(app.getPath('userData'), 'recordings')
+  recordings = createRecordingService({ db, recordingsDir, requestMicrophoneAccess })
+  registerMeetingIpc(createMeetingService({ db, recordingsDir, activeRecordings: recordings }))
+  registerRecordingIpc(recordings)
+
+  // Renderer yalnızca mikrofon izni isteyebilir; kamera ve diğer izin istekleri reddedilir.
+  session.defaultSession.setPermissionRequestHandler(
+    (_webContents, permission, callback, details) => {
+      const wantsVideo = 'mediaTypes' in details && details.mediaTypes?.includes('video')
+      callback(permission === 'media' && !wantsVideo)
+    }
   )
 
   // Default open or close DevTools by F12 in development
@@ -85,6 +106,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', () => {
+  recordings?.stopAll()
   db?.close()
 })
 

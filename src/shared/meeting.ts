@@ -1,6 +1,8 @@
 // Main, preload ve renderer'ın ortak kullandığı Meeting tipleri.
 // Terimler ve durumlar: GLOSSARY.md, docs/meeting-lifecycle.md
 
+import type { IpcResult } from './ipc-result'
+
 export const LANGUAGES = ['tr', 'en'] as const
 export type Language = (typeof LANGUAGES)[number]
 
@@ -32,11 +34,10 @@ export type MeetingErrorCode =
   | 'not-found'
   | 'meeting-already-recording'
   | 'no-recordings'
+  | 'recording-active'
   | 'invalid-transition'
   | 'approved-immutable'
   | 'invalid-input'
   | 'internal-error'
 
-// IPC üzerinden hata fırlatılınca `code` kaybolduğu için servis hataları sonuç olarak döner.
-export type MeetingResult<T> =
-  { ok: true; value: T } | { ok: false; code: MeetingErrorCode; message: string }
+export type MeetingResult<T> = IpcResult<T, MeetingErrorCode>

@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { Language, MeetingResult, MeetingSummary } from '../shared/meeting'
+import type { RecordingResult, RecordingSummary } from '../shared/recording'
 
 // Custom APIs for renderer
 const api = {
@@ -11,6 +12,18 @@ const api = {
     close: (id: string): Promise<MeetingResult<MeetingSummary>> =>
       ipcRenderer.invoke('meetings:close', id),
     remove: (id: string): Promise<MeetingResult<void>> => ipcRenderer.invoke('meetings:remove', id)
+  },
+  recordings: {
+    start: (meetingId: string): Promise<RecordingResult<RecordingSummary>> =>
+      ipcRenderer.invoke('recordings:start', meetingId),
+    append: (recordingId: string, pcm: Uint8Array): Promise<RecordingResult<void>> =>
+      ipcRenderer.invoke('recordings:append', recordingId, pcm),
+    stop: (recordingId: string): Promise<RecordingResult<RecordingSummary>> =>
+      ipcRenderer.invoke('recordings:stop', recordingId),
+    discard: (recordingId: string): Promise<RecordingResult<void>> =>
+      ipcRenderer.invoke('recordings:discard', recordingId),
+    openMicrophoneSettings: (): Promise<void> =>
+      ipcRenderer.invoke('recordings:open-microphone-settings')
   }
 }
 
