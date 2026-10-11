@@ -1,0 +1,139 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Neobrutalism monochromatic palette: sky, mapped onto the shadcn tokens */
+:root {
+  /* Neobrutalism tokens */
+  --secondary-background: oklch(100% 0 0);
+  --main: hsl(204, 100%, 50%);
+  --main-foreground: oklch(0% 0 0);
+  --overlay: oklch(0% 0 0 / 0.8);
+  --shadow: 2px 2px 0px 0px var(--border);
+
+  /* shadcn tokens */
+  --background: hsl(207, 89%, 93%);
+  --foreground: oklch(0% 0 0);
+  --card: var(--secondary-background);
+  --card-foreground: var(--foreground);
+  --popover: var(--secondary-background);
+  --popover-foreground: var(--foreground);
+  --primary: var(--main);
+  --primary-foreground: var(--main-foreground);
+  --secondary: var(--secondary-background);
+  --secondary-foreground: var(--foreground);
+  --muted: hsl(207, 70%, 85%);
+  --muted-foreground: oklch(35% 0 0);
+  --accent: var(--main);
+  --accent-foreground: var(--main-foreground);
+  --destructive: #ff4d50;
+  --border: oklch(0% 0 0);
+  --input: oklch(0% 0 0);
+  --ring: oklch(0% 0 0);
+  --chart-1: #0099ff;
+  --chart-2: #ff4d50;
+  --chart-3: #facc00;
+  --chart-4: #05e17a;
+  --chart-5: #7a83ff;
+  --chart-active-dot: #000;
+  --radius: 10px;
+  --sidebar: var(--secondary-background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--main);
+  --sidebar-primary-foreground: var(--main-foreground);
+  --sidebar-accent: var(--background);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
+/* Dark variant derived from the same palette (the source theme is light only) */
+.dark {
+  --secondary-background: hsl(207, 25%, 20%);
+  --main: hsl(204, 100%, 50%);
+  --main-foreground: oklch(0% 0 0);
+  --overlay: oklch(0% 0 0 / 0.8);
+
+  --background: hsl(207, 30%, 13%);
+  --foreground: oklch(100% 0 0);
+  --muted: hsl(207, 25%, 26%);
+  --muted-foreground: oklch(75% 0 0);
+  --border: oklch(0% 0 0);
+  --input: oklch(0% 0 0);
+  --ring: oklch(100% 0 0);
+  --sidebar-ring: var(--ring);
+}
+
+@theme inline {
+  --color-main: var(--main);
+  --color-main-foreground: var(--main-foreground);
+  --color-secondary-background: var(--secondary-background);
+  --color-overlay: var(--overlay);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --spacing-boxShadowX: 2px;
+  --spacing-boxShadowY: 2px;
+  --spacing-reverseBoxShadowX: -2px;
+  --spacing-reverseBoxShadowY: -2px;
+  --radius-base: 10px;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --shadow-shadow: var(--shadow);
+  /* Hard offset shadows instead of shadcn's soft ones */
+  --shadow-xs: var(--shadow);
+  --shadow-sm: var(--shadow);
+  --shadow-md: var(--shadow);
+  --shadow-lg: var(--shadow);
+  --font-weight-base: 500;
+  --font-weight-heading: 800;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-base;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+}
