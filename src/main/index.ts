@@ -1,7 +1,10 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { openDatabase, type Db } from './db/database'
+
+let db: Db | undefined
 
 function createWindow(): void {
   // Create the browser window.
@@ -42,6 +45,14 @@ app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
+  try {
+    db = openDatabase(join(app.getPath('userData'), 'meetanalyzing.db'))
+  } catch (error) {
+    dialog.showErrorBox('Veritabanı açılamadı', String(error))
+    app.quit()
+    return
+  }
+
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
@@ -68,6 +79,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('will-quit', () => {
+  db?.close()
 })
 
 // In this file you can include the rest of your app's specific main process
