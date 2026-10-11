@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { closeSync, mkdirSync, openSync, rmSync, writeSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Db } from '../db/database'
+import type { PowerGuard } from '../power/power-guard'
 import {
   AUDIO_FORMAT,
   BLOCK_ALIGN,
@@ -29,6 +30,8 @@ export interface RecordingServiceOptions {
   db: Db
   recordingsDir: string
   requestMicrophoneAccess: () => Promise<MicrophoneAccess>
+  // Kayıt sürerken Mac'in uykuya geçmesini engeller. Zorunludur: unutulursa engel sessizce kapanırdı.
+  power: PowerGuard
   now?: () => number
 }
 
@@ -61,9 +64,38 @@ export function createRecordingService({
   db,
   recordingsDir,
   requestMicrophoneAccess,
+  power,
   now = Date.now
 }: RecordingServiceOptions): RecordingService {
   const active = new Map<string, ActiveRecording>()
+
+  // Aktif kayıt kümesi yalnızca addActive/removeActive ile değişir; uyku engeli her seferinde kümeye göre
+  // alınır ya da bırakılır, böylece hiçbir çıkış yolunda (stop, discard, abort, stopAll) unutulmaz.
+  // Uyku engeli bir kolaylıktır: hata verirse loglanır ve kayıt verisi yolunu asla bozmaz.
+  function syncPower(): void {
+    try {
+      if (active.size > 0) power.acquire('recording')
+      else power.release('recording')
+    } catch (error) {
+      console.error('Uyku engeli güncellenemedi:', error)
+    }
+  }
+  function addActive(id: string, recording: ActiveRecording): void {
+    active.set(id, recording)
+    syncPower()
+  }
+  function removeActive(id: string): void {
+    active.delete(id)
+    syncPower()
+  }
+  // Dosya kapatılamasa bile (ör. geçersiz tanıtıcı) kayıt aktif kümeden çıkar ve engel bırakılır.
+  function closeAndRemove(id: string, recording: ActiveRecording): void {
+    try {
+      closeSync(recording.fd)
+    } finally {
+      removeActive(id)
+    }
+  }
 
   function hasActive(meetingId: string): boolean {
     return [...active.values()].some((recording) => recording.meetingId === meetingId)
@@ -123,7 +155,7 @@ export function createRecordingService({
       throw error
     }
 
-    active.set(id, { fd, meetingId, seq, startedAt, dataBytes: 0 })
+    addActive(id, { fd, meetingId, seq, startedAt, dataBytes: 0 })
     return { id, meetingId, seq, startedAt, endedAt: null, durationMs: null }
   }
 
@@ -150,8 +182,7 @@ export function createRecordingService({
       writeWavHeader(recording.fd, recording.dataBytes)
     } finally {
       // Header yazılamasa bile tanıtıcı kapanır ve Recording aktif kalıp Meeting'i kilitlemez.
-      closeSync(recording.fd)
-      active.delete(recordingId)
+      closeAndRemove(recordingId, recording)
     }
 
     const endedAt = now()
@@ -169,8 +200,7 @@ export function createRecordingService({
 
   function discard(recordingId: string): void {
     const recording = getActive(recordingId)
-    closeSync(recording.fd)
-    active.delete(recordingId)
+    closeAndRemove(recordingId, recording)
     db.prepare('DELETE FROM recordings WHERE id = ?').run(recordingId)
     rmSync(join(recordingsDir, recording.meetingId, recordingId), { recursive: true, force: true })
   }
@@ -189,8 +219,7 @@ export function createRecordingService({
   function abortMeeting(meetingId: string): void {
     for (const [id, recording] of active) {
       if (recording.meetingId !== meetingId) continue
-      closeSync(recording.fd)
-      active.delete(id)
+      closeAndRemove(id, recording)
     }
   }
 

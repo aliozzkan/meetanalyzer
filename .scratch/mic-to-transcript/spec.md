@@ -97,7 +97,7 @@ Ham whisper çıktısı (`words`) sonradan değişmez; Correction ayrı tutulur.
 ### Güç (powerSaveBlocker)
 
 - Main'de küçük bir power modülü; Recording ve Transcription Queue için iki ayrı `prevent-app-suspension` blocker'ı. Her biri kendi işi bitince bırakılır.
-- Doğrulama: `pmset -g assertions` → `PreventUserIdleSystemSleep`.
+- Doğrulama: `pmset -g` içindeki `sleep prevented by …, Electron` satırı ve `pmset -g assertions` içindeki `NoIdleSleepAssertion named: "Electron"` (Electron `prevent-app-suspension` için eski adlı IOKit türünü kullanır; `PreventUserIdleSystemSleep` ile aynı engeli sağlar ama özet sayacında görünmez).
 
 ### Çökme ve kapanma sonrası toparlanma (açılışta)
 

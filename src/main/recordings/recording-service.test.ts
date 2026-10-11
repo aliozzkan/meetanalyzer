@@ -3,14 +3,18 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { openDatabase, type Db } from '../db/database'
+import type { PowerGuard } from '../power/power-guard'
 import { createRecordingService, type RecordingService } from './recording-service'
+
+// Güç modülünün gerekmediği testler için etkisiz sahte.
+const noPower: PowerGuard = { acquire: () => {}, release: () => {} }
 
 const tempDirs: string[] = []
 afterEach(() => {
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-function setup(options: { microphone?: 'granted' | 'denied' } = {}): {
+function setup(options: { microphone?: 'granted' | 'denied'; power?: PowerGuard } = {}): {
   recordings: RecordingService
   db: Db
   recordingsDir: string
@@ -24,6 +28,7 @@ function setup(options: { microphone?: 'granted' | 'denied' } = {}): {
     db,
     recordingsDir,
     requestMicrophoneAccess: async () => options.microphone ?? 'granted',
+    power: options.power ?? noPower,
     now: () => time
   })
   return { recordings, db, recordingsDir, tick: () => (time += 1_000) }
@@ -229,5 +234,93 @@ describe('Recording servisi', () => {
 
     const wav = readFileSync(join(recordingsDir, 'm1', recording.id, 'mic.wav'))
     expect(wav.length).toBe(44 + 320_000)
+  })
+})
+
+// Sahte güç modülü: hangi sebebin alınıp bırakıldığını sırayla kaydeder.
+function fakePower(): { power: PowerGuard; events: string[] } {
+  const events: string[] = []
+  return {
+    power: {
+      acquire: (reason) => events.push(`acquire:${reason}`),
+      release: (reason) => events.push(`release:${reason}`)
+    },
+    events
+  }
+}
+
+describe('Recording servisi: uyku engeli', () => {
+  it('Recording başlayınca uyku engeli alınır, durunca bırakılır', async () => {
+    const { power, events } = fakePower()
+    const { recordings, db } = setup({ power })
+    insertMeeting(db)
+
+    const recording = await recordings.start('m1')
+    expect(events).toEqual(['acquire:recording'])
+
+    recordings.stop(recording.id)
+    expect(events).toEqual(['acquire:recording', 'release:recording'])
+  })
+
+  it('mikrofon izni reddedilirse uyku engeli hiç alınmaz', async () => {
+    const { power, events } = fakePower()
+    const { recordings, db } = setup({ microphone: 'denied', power })
+    insertMeeting(db)
+
+    await expect(recordings.start('m1')).rejects.toMatchObject({ code: 'microphone-denied' })
+
+    expect(events).toEqual([])
+  })
+
+  it('Meeting kayıtta değilse uyku engeli hiç alınmaz', async () => {
+    const { power, events } = fakePower()
+    const { recordings, db } = setup({ power })
+    insertMeeting(db, 'closed-meeting', 'closed')
+
+    await expect(recordings.start('closed-meeting')).rejects.toMatchObject({
+      code: 'meeting-not-recording'
+    })
+
+    expect(events).toEqual([])
+  })
+
+  it('güç modülü hata verse de kayıt verisi yolu bozulmaz: başlar, yazılır, düzgün biter', async () => {
+    const broken: PowerGuard = {
+      acquire: () => {
+        throw new Error('güç modülü bozuk')
+      },
+      release: () => {
+        throw new Error('güç modülü bozuk')
+      }
+    }
+    const { recordings, db, recordingsDir, tick } = setup({ power: broken })
+    insertMeeting(db)
+
+    const recording = await recordings.start('m1')
+    recordings.append(recording.id, ONE_SECOND)
+    tick()
+    recordings.stop(recording.id)
+
+    const wav = readFileSync(join(recordingsDir, 'm1', recording.id, 'mic.wav'))
+    expect(wav.readUInt32LE(40)).toBe(32_000)
+    expect(
+      db.prepare('SELECT ended_at FROM recordings WHERE id = ?').pluck().get(recording.id)
+    ).toBe(2_000)
+    expect(recordings.hasActive('m1')).toBe(false)
+  })
+
+  it.each([
+    ['discard', (r: RecordingService, id: string) => r.discard(id)],
+    ['abortMeeting', (r: RecordingService) => r.abortMeeting('m1')],
+    ['stopAll', (r: RecordingService) => r.stopAll()]
+  ])('%s sonrası uyku engeli bırakılır', async (_name, end) => {
+    const { power, events } = fakePower()
+    const { recordings, db } = setup({ power })
+    insertMeeting(db)
+    const recording = await recordings.start('m1')
+
+    end(recordings, recording.id)
+
+    expect(events).toEqual(['acquire:recording', 'release:recording'])
   })
 })

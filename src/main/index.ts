@@ -1,10 +1,11 @@
-import { app, shell, BrowserWindow, dialog, session } from 'electron'
+import { app, shell, BrowserWindow, dialog, powerSaveBlocker, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { openDatabase, type Db } from './db/database'
 import { registerMeetingIpc } from './meetings/ipc'
 import { createMeetingService } from './meetings/meeting-service'
+import { createPowerGuard } from './power/power-guard'
 import { requestMicrophoneAccess } from './recordings/microphone'
 import { recoverInterruptedRecordings } from './recordings/recovery'
 import { registerRecordingIpc } from './recordings/ipc'
@@ -83,7 +84,9 @@ app.whenReady().then(() => {
     console.error('Yarım kalan kayıtlar toparlanamadı:', error)
   }
 
-  recordings = createRecordingService({ db, recordingsDir, requestMicrophoneAccess })
+  // Uyku engeli sebepleri (kayıt, ileride transcription) tek bir güç modülünde toplanır.
+  const power = createPowerGuard(powerSaveBlocker)
+  recordings = createRecordingService({ db, recordingsDir, requestMicrophoneAccess, power })
   registerMeetingIpc(createMeetingService({ db, recordingsDir, activeRecordings: recordings }))
   registerRecordingIpc(recordings)
 
