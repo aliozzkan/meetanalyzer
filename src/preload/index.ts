@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { Language, MeetingResult, MeetingSummary } from '../shared/meeting'
+import type { ModelState } from '../shared/model'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
 
 // Custom APIs for renderer
@@ -24,6 +25,18 @@ const api = {
       ipcRenderer.invoke('recordings:discard', recordingId),
     openMicrophoneSettings: (): Promise<void> =>
       ipcRenderer.invoke('recordings:open-microphone-settings')
+  },
+  model: {
+    getState: (): Promise<ModelState> => ipcRenderer.invoke('model:get-state'),
+    start: (): Promise<ModelState> => ipcRenderer.invoke('model:start'),
+    cancel: (): Promise<void> => ipcRenderer.invoke('model:cancel'),
+    // Durum değişikliklerine abone olur; dönen işlev aboneliği kaldırır.
+    onState: (callback: (state: ModelState) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, state: ModelState): void =>
+        callback(state)
+      ipcRenderer.on('model:state', listener)
+      return () => ipcRenderer.removeListener('model:state', listener)
+    }
   }
 }
 

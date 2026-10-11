@@ -34,3 +34,5 @@ Spec: [../spec.md](../spec.md) → "4. Transcription", "Çökme ve kapanma sonra
 **2026-10-11 (issue 06'dan):** Metal'in ilk çalıştırma derlemesi (~46 sn) bu kuyruğun "işleniyor" durumunda ilerleme yüzdesi olmadan görünebilir; ayrıntı issue 08 notunda.
 
 **2026-10-11 (issue 05'ten):** Güç modülü hazır: `createPowerGuard(...)` ile `power.acquire('transcription')` / `power.release('transcription')` (`src/main/power/power-guard.ts`). Kuyruk çalışmaya başlayınca alın, kuyruk boşalınca bırakın; Recording'in engeli (`recording`) ayrı bir sebeptir ve birbirini etkilemez. `index.ts`'te oluşturulan `power` örneği kuyruğa da geçirilmeli. Doğrulama: `pmset -g` → `sleep prevented by … Electron`.
+
+**2026-10-11 (issue 07'den):** "Transcribe" model `ready` değilken model sorusunu yeniden göstermeli; `useModel` ve `ModelCard` hazır, ancak kart "Şimdilik atla" sonrası `localStorage` bayrağıyla gizli kalır: Transcribe anında bayrak yok sayılmalı (ör. karta `forceAsk` ekleyin).

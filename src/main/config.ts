@@ -1,3 +1,5 @@
+import { TRANSCRIPTION_MODEL_INFO } from '../shared/model-info'
+
 // Ayarlanabilir değerler. Her değerin gerekçesi ve nasıl yeniden ayarlanacağı
 // docs/tuning.md içindedir; bir değeri değiştirirken o dokümanı da güncelle.
 
@@ -21,14 +23,15 @@ export const WHISPER_VAD_ENABLED = true
 // aynı olmalıdır; birini değiştirirken diğerini de güncelle.
 export const WHISPER_VAD_MODEL_FILE = 'ggml-silero-v6.2.0.bin'
 
-// docs/tuning.md → Transcription modeli, Model kaynağı, Model SHA-256.
-// TODO(issue 07): revision ve sha256 ilk indirmede sabitlenecek.
+// docs/tuning.md → Transcription modeli, Model kaynağı, Model SHA-256. Revision ve hash birlikte güncellenir.
 export const TRANSCRIPTION_MODEL = {
-  fileName: 'ggml-large-v3-turbo-q5_0.bin',
-  repo: 'ggerganov/whisper.cpp',
-  revision: 'TODO',
-  sha256: 'TODO'
+  ...TRANSCRIPTION_MODEL_INFO,
+  // Hugging Face repo commit'i (main, 2024-10-29): dosya habersizce değişemez.
+  revision: '5359861c739e955e79d9a303bcbc70fb988958b1',
+  sha256: '394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2'
 } as const
+
+export const TRANSCRIPTION_MODEL_URL = `https://huggingface.co/${TRANSCRIPTION_MODEL.repo}/resolve/${TRANSCRIPTION_MODEL.revision}/${TRANSCRIPTION_MODEL.fileName}`
 
 // docs/tuning.md → Model indirme öncesi boş alan
 export const MODEL_DOWNLOAD_MIN_FREE_BYTES = 1024 ** 3

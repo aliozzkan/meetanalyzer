@@ -4,6 +4,8 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { openDatabase, type Db } from './db/database'
 import { registerMeetingIpc } from './meetings/ipc'
+import { createAppModelService } from './model/app-model'
+import { createStateBroadcaster, registerModelIpc } from './model/ipc'
 import { createMeetingService } from './meetings/meeting-service'
 import { createPowerGuard } from './power/power-guard'
 import { requestMicrophoneAccess } from './recordings/microphone'
@@ -89,6 +91,14 @@ app.whenReady().then(() => {
   recordings = createRecordingService({ db, recordingsDir, requestMicrophoneAccess, power })
   registerMeetingIpc(createMeetingService({ db, recordingsDir, activeRecordings: recordings }))
   registerRecordingIpc(recordings)
+
+  // Transcription modeli: indirme yalnızca kullanıcı isteğiyle başlar (otomatik indirme yok).
+  registerModelIpc(
+    createAppModelService({
+      modelsDir: join(app.getPath('userData'), 'models'),
+      onState: createStateBroadcaster()
+    })
+  )
 
   // Renderer yalnızca mikrofon izni isteyebilir; kamera ve diğer izin istekleri reddedilir.
   session.defaultSession.setPermissionRequestHandler(

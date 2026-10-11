@@ -40,6 +40,10 @@ _Avoid_: Processing, converting
 Meeting durumu: Transcript hazır; kullanıcı Suspect Word'lere Correction yapabilir ve Transcript'i onaylayabilir.
 _Avoid_: Ready, review
 
+**Transcription Model**:
+Transcription'ın cihaz üzerinde konuşmayı metne dökmek için kullandığı, ilk kullanımda kullanıcı onayıyla indirilen model dosyası. Recording için gerekmez.
+_Avoid_: Whisper dosyası, ses modeli
+
 **Transcript**:
 Transcription'ın ürettiği, bir Meeting'e ait tek metin; Meeting'in tüm Recording'lerini kapsar.
 _Avoid_: Transcribe (isim olarak), döküm

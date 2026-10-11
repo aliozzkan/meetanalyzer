@@ -1,0 +1,41 @@
+import { useCallback, useEffect, useState } from 'react'
+import type { ModelState } from '@shared/model'
+
+export interface ModelApi {
+  /** Henüz okunmadıysa null. */
+  state: ModelState | null
+  /** İndirmeyi başlatır ya da kaldığı yerden sürdürür (yalnızca kullanıcı isteğiyle çağrılmalı). */
+  start: () => void
+  cancel: () => void
+}
+
+export function useModel(): ModelApi {
+  const [state, setState] = useState<ModelState | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void window.api.model
+      .getState()
+      .then((initial) => {
+        if (!cancelled) setState((current) => current ?? initial)
+      })
+      .catch((error) => console.error('Model durumu okunamadı:', error))
+    const unsubscribe = window.api.model.onState(setState)
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [])
+
+  const start = useCallback(() => {
+    void window.api.model
+      .start()
+      .then(setState)
+      .catch((error) => console.error('Model indirme başlatılamadı:', error))
+  }, [])
+  const cancel = useCallback(() => {
+    void window.api.model.cancel()
+  }, [])
+
+  return { state, start, cancel }
+}
