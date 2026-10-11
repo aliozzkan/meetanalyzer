@@ -8,6 +8,14 @@ export const AUDIO_FORMAT = {
   bitsPerSample: 16
 } as const
 
+// AUDIO_FORMAT'tan türetilenler: bir örnek çerçevesinin bayt sayısı ve bir saniyelik sesin bayt sayısı.
+export const BLOCK_ALIGN = (AUDIO_FORMAT.channels * AUDIO_FORMAT.bitsPerSample) / 8
+export const BYTES_PER_SECOND = AUDIO_FORMAT.sampleRate * BLOCK_ALIGN
+
+export function durationMsFromBytes(audioBytes: number): number {
+  return Math.round((audioBytes / BYTES_PER_SECOND) * 1000)
+}
+
 // docs/tuning.md → PCM parça süresi
 export const PCM_CHUNK_MS = 5_000
 

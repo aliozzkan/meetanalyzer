@@ -6,6 +6,7 @@ import { openDatabase, type Db } from './db/database'
 import { registerMeetingIpc } from './meetings/ipc'
 import { createMeetingService } from './meetings/meeting-service'
 import { requestMicrophoneAccess } from './recordings/microphone'
+import { recoverInterruptedRecordings } from './recordings/recovery'
 import { registerRecordingIpc } from './recordings/ipc'
 import { createRecordingService, type RecordingService } from './recordings/recording-service'
 
@@ -68,6 +69,20 @@ app.whenReady().then(() => {
   }
 
   const recordingsDir = join(app.getPath('userData'), 'recordings')
+
+  // Önceki oturum kayıt sırasında çöktüyse yarım kalan Recording'ler IPC açılmadan önce toparlanır.
+  try {
+    const recovered = recoverInterruptedRecordings({ db, recordingsDir })
+    if (recovered.repaired + recovered.discarded + recovered.failed > 0) {
+      console.log(
+        `Yarım kalan kayıtlar: ${recovered.repaired} onarıldı, ${recovered.discarded} silindi, ${recovered.failed} işlenemedi.`
+      )
+    }
+  } catch (error) {
+    // Toparlama başarısız olsa da uygulama açılır; satır DB'de kaldığı için sonraki açılışta yeniden denenir.
+    console.error('Yarım kalan kayıtlar toparlanamadı:', error)
+  }
+
   recordings = createRecordingService({ db, recordingsDir, requestMicrophoneAccess })
   registerMeetingIpc(createMeetingService({ db, recordingsDir, activeRecordings: recordings }))
   registerRecordingIpc(recordings)

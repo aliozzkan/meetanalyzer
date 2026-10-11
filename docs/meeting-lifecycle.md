@@ -35,7 +35,7 @@ Recording ──► Closed ──► Transcribing ──► Transcribed ──�
 - **Transcribing → Closed:** Transcription hata verirse ya da uygulama Transcription sürerken kapanırsa. Tamamlanmış Recording'lerin transcript'leri korunur; yeniden başlatıldığında yalnızca kalanlar işlenir.
 - **Transcribed → Approved:** Kullanıcı Transcript'i onaylar. Her Suspect Word'ün tek tek işaretlenmesi gerekmez; düzeltilmemiş Suspect Word varsa sayısıyla birlikte onay sorulur. Onay geri alınamaz; Approved Transcript dondurulur ve Recording sesleri silinir.
 - **Silme:** Approved'dan önceki her durumda Meeting silinebilir; sesleri ve verisi tamamen kaldırılır. Approved ve sonrasında silme şimdilik yoktur.
-- **Çökme:** Recording sırasında uygulama çökerse açılışta yarım kalan Recording son yazılan parçada bitmiş sayılır; Meeting Recording durumunda kalır.
+- **Çökme:** Recording sırasında uygulama çökerse açılışta yarım kalan Recording son yazılan parçada bitmiş sayılır (WAV header'ı onarılır, süre ve bitiş zamanı yazılır; en fazla son ~5 sn kaybolur); hiç ses içermeyen Recording silinir. Meeting Recording durumunda kalır.
 - **Approved → Awaiting Analysis:** Analysis Request backend'e başarıyla ulaşırsa.
 - **Approved → Send Failed:** Analysis Request backend'e ulaşmazsa.
 - **Awaiting Analysis → Completed:** Backend analizin tamamlandığını bildirir, sonuç çekilir.

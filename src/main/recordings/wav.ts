@@ -1,3 +1,6 @@
+import { writeSync } from 'node:fs'
+import { AUDIO_FORMAT } from '../../shared/audio'
+
 export const WAV_HEADER_BYTES = 44
 
 export interface WavFormat {
@@ -27,4 +30,9 @@ export function createWavHeader(format: WavFormat & { dataBytes: number }): Buff
   header.write('data', 36, 'ascii')
   header.writeUInt32LE(dataBytes, 40)
   return header
+}
+
+// Açık bir WAV dosyasının başındaki header'ı gerçek ses boyutuyla yeniden yazar.
+export function writeWavHeader(fd: number, dataBytes: number): void {
+  writeSync(fd, createWavHeader({ ...AUDIO_FORMAT, dataBytes }), 0, WAV_HEADER_BYTES, 0)
 }

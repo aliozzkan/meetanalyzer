@@ -2,9 +2,16 @@ import { randomUUID } from 'node:crypto'
 import { closeSync, mkdirSync, openSync, rmSync, writeSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Db } from '../db/database'
-import { AUDIO_FORMAT, PCM_CHUNK_MS } from '../../shared/audio'
+import {
+  AUDIO_FORMAT,
+  BLOCK_ALIGN,
+  BYTES_PER_SECOND,
+  PCM_CHUNK_MS,
+  durationMsFromBytes
+} from '../../shared/audio'
 import type { RecordingErrorCode, RecordingSummary } from '../../shared/recording'
-import { WAV_HEADER_BYTES, createWavHeader } from './wav'
+import { markRecordingEnded } from './recording-rows'
+import { createWavHeader, writeWavHeader } from './wav'
 
 export class RecordingError extends Error {
   constructor(
@@ -46,9 +53,6 @@ interface ActiveRecording {
   dataBytes: number
 }
 
-const BYTES_PER_SECOND =
-  (AUDIO_FORMAT.sampleRate * AUDIO_FORMAT.channels * AUDIO_FORMAT.bitsPerSample) / 8
-const BLOCK_ALIGN = (AUDIO_FORMAT.channels * AUDIO_FORMAT.bitsPerSample) / 8
 // Renderer'dan gelen tek bir parça için üst sınır: parça süresinin iki katı. Normal parçalar bundan
 // küçüktür; ele geçirilmiş bir renderer'ın diski doldurmasını sınırlar.
 const MAX_CHUNK_BYTES = 2 * (PCM_CHUNK_MS / 1000) * BYTES_PER_SECOND
@@ -143,13 +147,7 @@ export function createRecordingService({
   function stop(recordingId: string): RecordingSummary {
     const recording = getActive(recordingId)
     try {
-      writeSync(
-        recording.fd,
-        createWavHeader({ ...AUDIO_FORMAT, dataBytes: recording.dataBytes }),
-        0,
-        WAV_HEADER_BYTES,
-        0
-      )
+      writeWavHeader(recording.fd, recording.dataBytes)
     } finally {
       // Header yazılamasa bile tanıtıcı kapanır ve Recording aktif kalıp Meeting'i kilitlemez.
       closeSync(recording.fd)
@@ -157,14 +155,8 @@ export function createRecordingService({
     }
 
     const endedAt = now()
-    const durationMs = Math.round((recording.dataBytes / BYTES_PER_SECOND) * 1000)
-    db.transaction(() => {
-      db.prepare('UPDATE recordings SET ended_at = ? WHERE id = ?').run(endedAt, recordingId)
-      db.prepare('UPDATE recording_channels SET duration_ms = ? WHERE recording_id = ?').run(
-        durationMs,
-        recordingId
-      )
-    })()
+    const durationMs = durationMsFromBytes(recording.dataBytes)
+    markRecordingEnded(db, recordingId, endedAt, durationMs)
     return {
       id: recordingId,
       meetingId: recording.meetingId,
