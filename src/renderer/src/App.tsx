@@ -1,23 +1,23 @@
-import Versions from './components/Versions'
-import { Button } from './components/ui/button'
+import { useState } from 'react'
+import { Toaster } from './components/ui/sonner'
+import { MeetingDetail } from './features/meetings/meeting-detail'
+import { MeetingList } from './features/meetings/meeting-list'
+import { useMeetings } from './features/meetings/use-meetings'
 
 function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const api = useMeetings()
+  const [openMeetingId, setOpenMeetingId] = useState<string | null>(null)
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-      <h1 className="text-2xl font-semibold">Meetanalyzing</h1>
-      <div className="flex gap-2">
-        <Button onClick={ipcHandle}>Send IPC</Button>
-        <Button
-          variant="neutral"
-          render={<a href="https://electron-vite.org/" target="_blank" rel="noreferrer" />}
-        >
-          Documentation
-        </Button>
-      </div>
-      <Versions />
-    </div>
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-6">
+      <h1 className="text-2xl font-heading">Meetanalyzing</h1>
+      {openMeetingId ? (
+        <MeetingDetail api={api} meetingId={openMeetingId} onBack={() => setOpenMeetingId(null)} />
+      ) : (
+        <MeetingList api={api} onOpen={setOpenMeetingId} />
+      )}
+      <Toaster />
+    </main>
   )
 }
 

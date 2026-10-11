@@ -23,3 +23,10 @@ Spec: [../spec.md](../spec.md) → "4. Transcription", "Çökme ve kapanma sonra
 - [ ] Transcription sırasında uygulama kapatılıp açılınca Meeting Closed'dadır; yeniden başlatmada yalnızca kalan Recording'ler işlenir.
 - [ ] Kuyruk çalışırken `pmset -g assertions` assertion'ı gösterir.
 - [ ] Kuyruk mantığı için (runner mock'lanarak) birim testleri var.
+
+## Comments
+
+**2026-10-11 (issue 02 review'undan):**
+- `meetings.remove` kuyrukta ya da işlenen Meeting'i DB cascade ile siliyor ama çalışan whisper process'inden ve bellekteki kuyruktan haberi yok. Bu issue silme sırasında runner'ı iptal etmeli ve kuyruğu güncellemeli.
+- `transition(id, to)` hata mesajı almıyor; `Transcribing → Closed` geçişinde `meetings.last_error` yazılabilmesi için opsiyonel bir `lastError` parametresi eklenmeli (test ile).
+- `transcription_queue` sırası `ORDER BY enqueued_at, rowid` ile okunmalı (issue 01 notu).

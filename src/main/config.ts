@@ -1,10 +1,7 @@
 // Ayarlanabilir değerler. Her değerin gerekçesi ve nasıl yeniden ayarlanacağı
 // docs/tuning.md içindedir; bir değeri değiştirirken o dokümanı da güncelle.
 
-export type Language = 'tr' | 'en'
-
-// docs/tuning.md → Varsayılan Language
-export const DEFAULT_LANGUAGE: Language = 'tr'
+// Varsayılan Language (docs/tuning.md) renderer ile paylaşıldığı için src/shared/meeting.ts'te durur.
 
 // docs/tuning.md → Ses formatı (ADR-0003)
 export const AUDIO_FORMAT = {

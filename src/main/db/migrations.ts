@@ -75,5 +75,10 @@ export const migrations: string[] = [
     meeting_id TEXT PRIMARY KEY REFERENCES meetings (id) ON DELETE CASCADE,
     enqueued_at INTEGER NOT NULL
   );
+  `,
+  // Aynı anda en fazla bir Meeting 'recording' durumunda olabilir (docs/meeting-lifecycle.md).
+  // Servis de kontrol eder; bu, veritabanı düzeyindeki son güvencedir.
+  `
+  CREATE UNIQUE INDEX one_recording_meeting ON meetings (state) WHERE state = 'recording';
   `
 ]

@@ -1,8 +1,10 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { openDatabase, type Db } from './db/database'
+import { registerMeetingIpc } from './meetings/ipc'
+import { createMeetingService } from './meetings/meeting-service'
 
 let db: Db | undefined
 
@@ -53,15 +55,16 @@ app.whenReady().then(() => {
     return
   }
 
+  registerMeetingIpc(
+    createMeetingService({ db, recordingsDir: join(app.getPath('userData'), 'recordings') })
+  )
+
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
-
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
 
   createWindow()
 

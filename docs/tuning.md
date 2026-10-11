@@ -16,4 +16,4 @@ ADR gerektirmeyen ama "neden bu değer?" sorusunun cevabı kaybolmaması gereken
 | **Model indirme öncesi boş alan** | En az 1 GB | Model + geçici dosya + pay. | Model boyutu değişirse. |
 | **Suspect Word dinleme penceresi** | Kelimenin 2 sn öncesinden 2 sn sonrasına | Yanlış duymayı çözmek için bağlam gerekir. | Kullanıcı geri bildirimiyle. |
 | **Sessiz mikrofon uyarısı** | 10 sn tam sessizlik | Sessize alınmış veya yanlış mikrofonu erken yakalamak; doğal duraklamalarda uyarmamak. | Yanlış alarm sıklığına göre. |
-| **Varsayılan Language** | Türkçe | Default Language ayarı henüz yok (backlog). | Default Language ayarı gelince kalkar. |
+| **Varsayılan Language** | Türkçe (`DEFAULT_LANGUAGE`, `src/shared/meeting.ts`) | Default Language ayarı henüz yok (backlog 08). Renderer ile paylaşıldığı için config modülünde değil, `src/shared/`'tadır. | Default Language ayarı gelince kalkar. |

@@ -16,3 +16,7 @@ Spec: [../spec.md](../spec.md) → "6. Approve"
 
 - [ ] Onaydan sonra metin değiştirilemez ve ses dosyaları diskte yoktur.
 - [ ] Birleştirme kuralı için birim testleri (boş, çok kelimeli Correction, noktalama).
+
+## Comments
+
+**2026-10-11 (issue 02 review'undan):** Silme koruması şu an `state === 'approved'`. Yaşam döngüsü Awaiting Analysis / Completed durumlarını da kapsadığında bu guard "Approved ve sonrası" olacak şekilde genişletilmeli (Analysis dilimi).

@@ -1,8 +1,20 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import type { Language, MeetingResult, MeetingSummary } from '../shared/meeting'
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  meetings: {
+    list: (): Promise<MeetingResult<MeetingSummary[]>> => ipcRenderer.invoke('meetings:list'),
+    start: (language: Language): Promise<MeetingResult<MeetingSummary>> =>
+      ipcRenderer.invoke('meetings:start', language),
+    close: (id: string): Promise<MeetingResult<MeetingSummary>> =>
+      ipcRenderer.invoke('meetings:close', id),
+    remove: (id: string): Promise<MeetingResult<void>> => ipcRenderer.invoke('meetings:remove', id)
+  }
+}
+
+export type Api = typeof api
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

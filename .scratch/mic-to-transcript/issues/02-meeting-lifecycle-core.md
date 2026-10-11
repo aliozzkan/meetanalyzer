@@ -21,3 +21,13 @@ Spec: [../spec.md](../spec.md) → "2. Meeting başlatma", "3. Meeting'i kapatma
 - [ ] Recording'siz Meeting kapatılamaz; silinebilir.
 - [ ] Approved Meeting silinemez; diğer durumlarda silme dosyaları da kaldırır.
 - [ ] Geçiş kuralları için birim testleri var.
+
+## Comments
+
+**2026-10-11:** Uygulandı.
+- Servis: `src/main/meetings/meeting-service.ts` (`start/get/list/transition/close/remove`, `now` enjekte edilebilir). İzinli geçişler `ALLOWED_TRANSITIONS` tablosunda; 14 + 3 test.
+- DB düzeyinde ek güvence: migration 2, `meetings(state) WHERE state = 'recording'` üzerinde partial unique index.
+- IPC: `src/main/meetings/ipc.ts`. Servis hataları `{ ok: false, code, message }`; beklenmeyen hatalar loglanır ve `internal-error` döner.
+- Ortak tipler ve `DEFAULT_LANGUAGE`: `src/shared/meeting.ts` (renderer `@shared` alias'ı).
+- Arayüz: Meeting listesi + detay iskeleti, silme onayı. Gerçek uygulamada CDP ile doğrulandı (IPC kuralları, liste/detay, silme onayı, Recording'li Meeting'de kapatma).
+- Template artığı `ping` IPC'si ve "Send IPC" düğmesi kaldırıldı.

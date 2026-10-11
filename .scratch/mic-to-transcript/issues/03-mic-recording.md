@@ -21,3 +21,7 @@ Spec: [../spec.md](../spec.md) → "2. Meeting başlatma ve Recording", "Kayıt 
 - [ ] İzin reddedildiğinde Recording satırı oluşmaz ve yönlendirme görünür.
 - [ ] Mikrofon sessize alındığında uyarı çıkar, ses gelince kaybolur.
 - [ ] WAV header yazımı için birim testi var.
+
+## Comments
+
+**2026-10-11 (issue 02 review'undan):** `meetings.remove` şu an aktif bir Recording'i bilmiyor. Recording sürerken Meeting silinirse WAV writer silinen klasöre yazmaya devam eder ya da `recordings` FK hatasıyla çöker. Bu issue'da ya Recording'i durduran bir kanca (`remove` öncesi) ya da yazma sırasında Meeting'in yok olmasını zarifçe karşılayan bir yol eklenmeli; testi de yazılmalı.

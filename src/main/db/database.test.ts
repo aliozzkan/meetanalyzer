@@ -106,4 +106,15 @@ describe('openDatabase', () => {
 
     expect(() => insertMeeting(db, { language: 'de' })).toThrow(/CHECK constraint failed/)
   })
+
+  it('veritabanı düzeyinde en fazla bir Meeting recording durumunda olabilir', () => {
+    const db = openDatabase(':memory:')
+    insertMeeting(db, { id: 'm1', state: 'recording' })
+
+    expect(() => insertMeeting(db, { id: 'm2', state: 'recording' })).toThrow(
+      /UNIQUE constraint failed/
+    )
+    expect(() => insertMeeting(db, { id: 'm3', state: 'closed' })).not.toThrow()
+    expect(() => insertMeeting(db, { id: 'm4', state: 'closed' })).not.toThrow()
+  })
 })
