@@ -19,3 +19,5 @@ Spec: [../spec.md](../spec.md) → "5. Correction"
 ## Comments
 
 **2026-10-11 (issue 03'ten):** `recording_channels.file_path` `recordingsDir`'e göreli saklanır; özel protokol bunu `recordingsDir` ile birleştirip sonucun `recordingsDir` içinde kaldığını doğrulamalı.
+
+**2026-10-11 (issue 08'den):** `words.start_ms/end_ms` orijinal zaman çizgisindedir (VAD eşlemesi uygulanmış, ADR-0006). Bazı kelimeler sıfır uzunluklu gelebilir (`start_ms == end_ms`); ±2 sn pencereyle oynatırken sorun değil.

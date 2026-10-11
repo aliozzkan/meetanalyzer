@@ -8,16 +8,22 @@ import { TRANSCRIPTION_MODEL_INFO } from '../shared/model-info'
 // Ses sabitleri (format, parça süresi, sessiz mikrofon uyarısı) renderer ile paylaşıldığı için
 // src/shared/audio.ts'te durur.
 
-// docs/tuning.md → Suspect Word eşiği (ADR-0002). Kelimenin güveni,
-// token olasılıklarının minimumudur; bu değerin altındaysa Suspect Word'dür.
+// docs/tuning.md → Suspect Word eşiği (ADR-0002). Kelimenin güveni, harf/rakam içeren token
+// olasılıklarının minimumudur (noktalama katılmaz); bu değerin altındaysa Suspect Word'dür.
 export const SUSPECT_WORD_THRESHOLD = 0.5
 
-// docs/tuning.md → whisper process önceliği. Thread sayısı (performans
-// çekirdeklerinin yarısı) issue 08'de, runner ile birlikte hesaplanır.
+// docs/tuning.md → whisper process önceliği (nice): yüksek değer düşük öncelik demektir; eşzamanlı Recording
+// ve toplantı uygulaması takılmasın. Transcription çalıştırıcısına çağıran (issue 09) geçirir.
 export const WHISPER_NICE = 10
 
-// docs/tuning.md → VAD
-export const WHISPER_VAD_ENABLED = true
+// docs/tuning.md → whisper thread sayısı: performans çekirdeklerinin yarısı, en az bu kadar
+// (bkz. src/main/transcription/whisper-args.ts).
+export const WHISPER_MIN_THREADS = 2
+
+// docs/tuning.md → VAD örtüşmesi (sn). whisper'a `--vad-samples-overlap` ile açıkça verilir ve parser'ın
+// VAD zaman eşlemesi (ADR-0006) aynı değeri kullanır; whisper varsayılanına güvenilmez. VAD'in kendisi
+// (--vad) ADR-0002 gereği her zaman açıktır.
+export const WHISPER_VAD_SAMPLES_OVERLAP_S = 0.1
 
 // docs/tuning.md → VAD modeli. Dosya adı scripts/build-whisper.sh içindeki VAD_MODEL_FILE ile
 // aynı olmalıdır; birini değiştirirken diğerini de güncelle.

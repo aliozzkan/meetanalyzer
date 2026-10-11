@@ -1,7 +1,8 @@
 import { closeSync, existsSync, ftruncateSync, openSync, rmSync, statSync } from 'node:fs'
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import { dirname } from 'node:path'
 import { BLOCK_ALIGN, durationMsFromBytes } from '../../shared/audio'
 import type { Db } from '../db/database'
+import { resolveRecordingFile } from './recording-paths'
 import { markRecordingEnded } from './recording-rows'
 import { WAV_HEADER_BYTES, writeWavHeader } from './wav'
 
@@ -17,9 +18,6 @@ interface InterruptedRow {
   started_at: number
   file_path: string
 }
-
-// Kayıt dosyası düzeni: <meetingId>/<recordingId>/mic.wav (recording-service.ts)
-const FILE_PATH_SEGMENTS = 3
 
 // Uygulama kayıt sırasında çöktüyse (kill -9, elektrik kesintisi) açılışta `ended_at`'i boş kalan
 // Recording'leri toparlar. Aktif Recording yalnızca bellekte izlenir; açılışta kalan her bu tür satır
@@ -71,19 +69,6 @@ function recoverRow(db: Db, recordingsDir: string, row: InterruptedRow): 'repair
   const durationMs = durationMsFromBytes(dataBytes)
   markRecordingEnded(db, row.id, row.started_at + durationMs, durationMs)
   return 'repaired'
-}
-
-// DB'deki göreli yolu, yalnızca beklenen düzene uyuyorsa ve kayıt klasörünün içinde kalıyorsa kabul eder.
-// Silme `dirname(file)` üzerinde çalıştığından düzen sıkı doğrulanır: tek segmentli bir yol aksi halde
-// kayıt klasörünün kendisini, iki segmentli bir yol bir Meeting'in tüm kayıtlarını silerdi.
-function resolveRecordingFile(recordingsDir: string, filePath: string): string {
-  const file = resolve(recordingsDir, filePath)
-  const fromRoot = relative(recordingsDir, file)
-  const segments = fromRoot.split(sep)
-  if (isAbsolute(fromRoot) || segments.includes('..') || segments.length !== FILE_PATH_SEGMENTS) {
-    throw new Error(`Beklenmeyen kayıt yolu: ${filePath}`)
-  }
-  return file
 }
 
 // Dosyadaki tam örneklerden oluşan ses verisinin bayt sayısı; çökme bir örneğin ortasına denk

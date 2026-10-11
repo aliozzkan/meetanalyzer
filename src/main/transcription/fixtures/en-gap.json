@@ -1,0 +1,436 @@
+{
+	"systeminfo": "WHISPER : VITISAI = 0 | COREML = 0 | OPENVINO = 0 | MTL : EMBED_LIBRARY = 1 | CPU : NEON = 1 | ARM_FMA = 1 | FP16_VA = 1 | DOTPROD = 1 | ACCELERATE = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "large",
+		"multilingual": true,
+		"vocab": 51866,
+		"audio": {
+			"ctx": 1500,
+			"state": 1280,
+			"head": 20,
+			"layer": 32
+		},
+		"text": {
+			"ctx": 448,
+			"state": 1280,
+			"head": 20,
+			"layer": 4
+		},
+		"mels": 128,
+		"ftype": 8
+	},
+	"params": {
+		"model": "/models/ggml-large-v3-turbo-q5_0.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:04,990",
+				"to": "00:00:08,710"
+			},
+			"offsets": {
+				"from": 4990,
+				"to": 8710
+			},
+			"text": " The quarterly budget review is scheduled for Tuesday, March 12.",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50365,
+					"p": 0.993833,
+					"t_dtw": -1
+				},
+				{
+					"text": " The",
+					"timestamps": {
+						"from": "00:00:00,020",
+						"to": "00:00:00,090"
+					},
+					"offsets": {
+						"from": 20,
+						"to": 90
+					},
+					"id": 440,
+					"p": 0.916127,
+					"t_dtw": -1
+				},
+				{
+					"text": " quarterly",
+					"timestamps": {
+						"from": "00:00:00,210",
+						"to": "00:00:00,620"
+					},
+					"offsets": {
+						"from": 210,
+						"to": 620
+					},
+					"id": 38633,
+					"p": 0.952377,
+					"t_dtw": -1
+				},
+				{
+					"text": " budget",
+					"timestamps": {
+						"from": "00:00:00,680",
+						"to": "00:00:00,990"
+					},
+					"offsets": {
+						"from": 680,
+						"to": 990
+					},
+					"id": 4706,
+					"p": 0.999363,
+					"t_dtw": -1
+				},
+				{
+					"text": " review",
+					"timestamps": {
+						"from": "00:00:00,990",
+						"to": "00:00:01,320"
+					},
+					"offsets": {
+						"from": 990,
+						"to": 1320
+					},
+					"id": 3131,
+					"p": 0.999699,
+					"t_dtw": -1
+				},
+				{
+					"text": " is",
+					"timestamps": {
+						"from": "00:00:01,320",
+						"to": "00:00:01,430"
+					},
+					"offsets": {
+						"from": 1320,
+						"to": 1430
+					},
+					"id": 307,
+					"p": 0.99871,
+					"t_dtw": -1
+				},
+				{
+					"text": " scheduled",
+					"timestamps": {
+						"from": "00:00:01,430",
+						"to": "00:00:01,930"
+					},
+					"offsets": {
+						"from": 1430,
+						"to": 1930
+					},
+					"id": 15678,
+					"p": 0.999746,
+					"t_dtw": -1
+				},
+				{
+					"text": " for",
+					"timestamps": {
+						"from": "00:00:01,930",
+						"to": "00:00:02,090"
+					},
+					"offsets": {
+						"from": 1930,
+						"to": 2090
+					},
+					"id": 337,
+					"p": 0.998729,
+					"t_dtw": -1
+				},
+				{
+					"text": " Tuesday",
+					"timestamps": {
+						"from": "00:00:02,090",
+						"to": "00:00:02,430"
+					},
+					"offsets": {
+						"from": 2090,
+						"to": 2430
+					},
+					"id": 10017,
+					"p": 0.999253,
+					"t_dtw": -1
+				},
+				{
+					"text": ",",
+					"timestamps": {
+						"from": "00:00:02,530",
+						"to": "00:00:02,640"
+					},
+					"offsets": {
+						"from": 2530,
+						"to": 2640
+					},
+					"id": 11,
+					"p": 0.999007,
+					"t_dtw": -1
+				},
+				{
+					"text": " March",
+					"timestamps": {
+						"from": "00:00:02,640",
+						"to": "00:00:03,020"
+					},
+					"offsets": {
+						"from": 2640,
+						"to": 3020
+					},
+					"id": 6129,
+					"p": 0.982478,
+					"t_dtw": -1
+				},
+				{
+					"text": " 12",
+					"timestamps": {
+						"from": "00:00:03,020",
+						"to": "00:00:03,480"
+					},
+					"offsets": {
+						"from": 3020,
+						"to": 3480
+					},
+					"id": 2272,
+					"p": 0.99967,
+					"t_dtw": -1
+				},
+				{
+					"text": ".",
+					"timestamps": {
+						"from": "00:00:03,480",
+						"to": "00:00:03,710"
+					},
+					"offsets": {
+						"from": 3480,
+						"to": 3710
+					},
+					"id": 13,
+					"p": 0.765343,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_186]",
+					"timestamps": {
+						"from": "00:00:03,720",
+						"to": "00:00:03,720"
+					},
+					"offsets": {
+						"from": 3720,
+						"to": 3720
+					},
+					"id": 50551,
+					"p": 0.365497,
+					"t_dtw": -1
+				}
+			]
+		},
+		{
+			"timestamps": {
+				"from": "00:00:11,730",
+				"to": "00:00:16,080"
+			},
+			"offsets": {
+				"from": 11730,
+				"to": 16080
+			},
+			"text": " Please send the final report to Jonathan Weatherby before noon.",
+			"tokens": [
+				{
+					"text": " Please",
+					"timestamps": {
+						"from": "00:00:04,140",
+						"to": "00:00:04,140"
+					},
+					"offsets": {
+						"from": 4140,
+						"to": 4140
+					},
+					"id": 2555,
+					"p": 0.999474,
+					"t_dtw": -1
+				},
+				{
+					"text": " send",
+					"timestamps": {
+						"from": "00:00:04,160",
+						"to": "00:00:04,220"
+					},
+					"offsets": {
+						"from": 4160,
+						"to": 4220
+					},
+					"id": 2845,
+					"p": 0.999819,
+					"t_dtw": -1
+				},
+				{
+					"text": " the",
+					"timestamps": {
+						"from": "00:00:04,350",
+						"to": "00:00:04,540"
+					},
+					"offsets": {
+						"from": 4350,
+						"to": 4540
+					},
+					"id": 264,
+					"p": 0.998357,
+					"t_dtw": -1
+				},
+				{
+					"text": " final",
+					"timestamps": {
+						"from": "00:00:04,540",
+						"to": "00:00:04,860"
+					},
+					"offsets": {
+						"from": 4540,
+						"to": 4860
+					},
+					"id": 2572,
+					"p": 0.999685,
+					"t_dtw": -1
+				},
+				{
+					"text": " report",
+					"timestamps": {
+						"from": "00:00:04,860",
+						"to": "00:00:05,240"
+					},
+					"offsets": {
+						"from": 4860,
+						"to": 5240
+					},
+					"id": 2275,
+					"p": 0.999962,
+					"t_dtw": -1
+				},
+				{
+					"text": " to",
+					"timestamps": {
+						"from": "00:00:05,240",
+						"to": "00:00:05,360"
+					},
+					"offsets": {
+						"from": 5240,
+						"to": 5360
+					},
+					"id": 281,
+					"p": 0.999548,
+					"t_dtw": -1
+				},
+				{
+					"text": " Jonathan",
+					"timestamps": {
+						"from": "00:00:05,360",
+						"to": "00:00:05,850"
+					},
+					"offsets": {
+						"from": 5360,
+						"to": 5850
+					},
+					"id": 15471,
+					"p": 0.998184,
+					"t_dtw": -1
+				},
+				{
+					"text": " Weather",
+					"timestamps": {
+						"from": "00:00:05,880",
+						"to": "00:00:06,300"
+					},
+					"offsets": {
+						"from": 5880,
+						"to": 6300
+					},
+					"id": 34441,
+					"p": 0.9754,
+					"t_dtw": -1
+				},
+				{
+					"text": "by",
+					"timestamps": {
+						"from": "00:00:06,360",
+						"to": "00:00:06,430"
+					},
+					"offsets": {
+						"from": 6360,
+						"to": 6430
+					},
+					"id": 2322,
+					"p": 0.999655,
+					"t_dtw": -1
+				},
+				{
+					"text": " before",
+					"timestamps": {
+						"from": "00:00:06,430",
+						"to": "00:00:06,800"
+					},
+					"offsets": {
+						"from": 6430,
+						"to": 6800
+					},
+					"id": 949,
+					"p": 0.993727,
+					"t_dtw": -1
+				},
+				{
+					"text": " noon",
+					"timestamps": {
+						"from": "00:00:06,800",
+						"to": "00:00:06,890"
+					},
+					"offsets": {
+						"from": 6800,
+						"to": 6890
+					},
+					"id": 24040,
+					"p": 0.998993,
+					"t_dtw": -1
+				},
+				{
+					"text": ".",
+					"timestamps": {
+						"from": "00:00:07,140",
+						"to": "00:00:07,320"
+					},
+					"offsets": {
+						"from": 7140,
+						"to": 7320
+					},
+					"id": 13,
+					"p": 0.996542,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_366]",
+					"timestamps": {
+						"from": "00:00:07,320",
+						"to": "00:00:07,320"
+					},
+					"offsets": {
+						"from": 7320,
+						"to": 7320
+					},
+					"id": 50731,
+					"p": 0.629893,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}
