@@ -27,6 +27,10 @@ export const WHISPER_NICE = 10
 // docs/tuning.md → VAD
 export const WHISPER_VAD_ENABLED = true
 
+// docs/tuning.md → VAD modeli. Dosya adı scripts/build-whisper.sh içindeki VAD_MODEL_FILE ile
+// aynı olmalıdır; birini değiştirirken diğerini de güncelle.
+export const WHISPER_VAD_MODEL_FILE = 'ggml-silero-v6.2.0.bin'
+
 // docs/tuning.md → Transcription modeli, Model kaynağı, Model SHA-256.
 // TODO(issue 07): revision ve sha256 ilk indirmede sabitlenecek.
 export const TRANSCRIPTION_MODEL = {

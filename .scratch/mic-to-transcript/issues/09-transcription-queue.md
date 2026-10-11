@@ -30,3 +30,5 @@ Spec: [../spec.md](../spec.md) → "4. Transcription", "Çökme ve kapanma sonra
 - `meetings.remove` kuyrukta ya da işlenen Meeting'i DB cascade ile siliyor ama çalışan whisper process'inden ve bellekteki kuyruktan haberi yok. Bu issue silme sırasında runner'ı iptal etmeli ve kuyruğu güncellemeli.
 - `transition(id, to)` hata mesajı almıyor; `Transcribing → Closed` geçişinde `meetings.last_error` yazılabilmesi için opsiyonel bir `lastError` parametresi eklenmeli (test ile).
 - `transcription_queue` sırası `ORDER BY enqueued_at, rowid` ile okunmalı (issue 01 notu).
+
+**2026-10-11 (issue 06'dan):** Metal'in ilk çalıştırma derlemesi (~46 sn) bu kuyruğun "işleniyor" durumunda ilerleme yüzdesi olmadan görünebilir; ayrıntı issue 08 notunda.

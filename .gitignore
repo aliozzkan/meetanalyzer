@@ -4,3 +4,8 @@ out
 .DS_Store
 .eslintcache
 *.log*
+
+# scripts/build-whisper.sh çıktıları
+resources/bin/
+resources/models/
+.cache/

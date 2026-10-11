@@ -17,3 +17,11 @@ Spec: [../spec.md](../spec.md) → "Transcription", "Suspect Word (ADR-0002)"
 - [ ] Gerçek bir whisper `-ojf` çıktısından alınmış Türkçe ve İngilizce fixture'larla parser testleri (ekler, noktalama, özel token'lar).
 - [ ] Kısa bir test WAV'ı uçtan uca transcribe edilip DB'ye yazılır.
 - [ ] `cancel()` sonrası DB'de yarım veri kalmaz.
+
+## Comments
+
+**2026-10-11 (issue 06 duman testinden):**
+- Yol çözümü: `getWhisperPaths({ isPackaged, appPath, resourcesPath })` (`src/main/whisper/paths.ts`) `{ cli, vadModel }` döndürür. Binary ve VAD dosyası yoksa runner anlaşılır bir hata vermeli ("`pnpm build:whisper` çalıştır").
+- `-ojf` çıktısı: `transcription[]` (segmentler: `timestamps`, `offsets` {from,to ms}, `text`, `tokens[]`). Her token: `text`, `p` (olasılık), `offsets`, `id`, `t_dtw`, `timestamps`. Özel token'lar köşeli parantezli (`[_BEG_]`, `[_TT_415]`); `[_TT_*]` zaman damgası token'ıdır ve düşük `p` taşıyabilir, kelimeye katılmamalı. Token metni boşlukla başlıyorsa yeni kelime başlar.
+- **Metal ilk çalıştırma maliyeti:** gömülü Metal kütüphanesi ilk çalıştırmada derlenir (ölçüm: ~46 sn, 35 kütüphane), sonuç sistem önbelleğine yazılır ve sonraki başlatmalar ~0.3 sn. Yani kullanıcının makinesindeki ilk Transcription uzun süre ilerleme göstermeden bekleyebilir; UI'da "ilk kullanım hazırlığı" gibi bir durum gösterilmeli, süreç bu sürede hata sanılıp öldürülmemeli (timeout koyma). Önbellek temizlenirse ya da macOS güncellenirse tekrarlanabilir.
+- Duman testi: `whisper-cli -m ggml-tiny.bin -f jfk.wav -l en --vad -vm resources/models/ggml-silero-v6.2.0.bin -ojf -of <çıktı> -t 4` çalıştı (exit 0, VAD zaman damgaları 0.32–10.47 sn).
