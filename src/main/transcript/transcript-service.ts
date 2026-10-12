@@ -19,8 +19,9 @@ export class TranscriptError extends Error {
 
 export interface TranscriptService {
   get: (meetingId: string) => Transcript
-  /** Suspect Word'ün yerine geçen metni kaydeder (word başına tek satır); boş metin kelimeyi siler. */
-  correct: (wordId: string, corrected: string) => void
+  /** Suspect Word'ün yerine geçen metni kaydeder (word başına tek satır); boş metin kelimeyi siler.
+   * Kenar boşlukları kırpılır; saklanan (kırpılmış) metin döner. */
+  correct: (wordId: string, corrected: string) => string
   /** Correction'ı kaldırır; kelime ham metnine döner. */
   revert: (wordId: string) => void
 }
@@ -117,7 +118,7 @@ export function createTranscriptService({
     return word
   }
 
-  function correct(wordId: string, corrected: string): void {
+  function correct(wordId: string, corrected: string): string {
     if (typeof corrected !== 'string') {
       throw new TranscriptError('invalid-input', 'Düzeltme metin olmalı.')
     }
@@ -125,11 +126,13 @@ export function createTranscriptService({
     if (word.is_suspect !== 1) {
       throw new TranscriptError('not-suspect', 'Yalnızca şüpheli kelimeler düzeltilebilir.')
     }
+    const stored = corrected.trim()
     db.prepare(
       `INSERT INTO corrections (word_id, original, corrected, language, created_at)
        VALUES (?, ?, ?, ?, ?)
        ON CONFLICT (word_id) DO UPDATE SET corrected = excluded.corrected`
-    ).run(wordId, word.text, corrected.trim(), word.language, now())
+    ).run(wordId, word.text, stored, word.language, now())
+    return stored
   }
 
   function revert(wordId: string): void {

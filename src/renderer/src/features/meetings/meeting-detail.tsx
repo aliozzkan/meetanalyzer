@@ -58,7 +58,9 @@ export function MeetingDetail({ api, transcription, meetingId, onBack }: Props):
 
           <MeetingTranscriptionStatus meeting={meeting} transcription={transcription} />
 
-          {meeting.state === 'transcribed' && <CorrectionSection meetingId={meeting.id} />}
+          {meeting.state === 'transcribed' && (
+            <CorrectionSection key={meeting.id} meetingId={meeting.id} />
+          )}
 
           <Card>
             <CardHeader>

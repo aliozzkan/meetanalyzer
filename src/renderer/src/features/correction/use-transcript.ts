@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import type { Transcript } from '@shared/transcript'
+import type { Transcript, TranscriptResult } from '@shared/transcript'
 
 export interface TranscriptApi {
   /** Yüklenene kadar null. */
@@ -16,31 +16,45 @@ function withCorrection(
   wordId: string,
   corrected: string | null
 ): Transcript {
+  const changesWord = (words: { id: string }[]): boolean => words.some((word) => word.id === wordId)
   return {
     ...transcript,
-    recordings: transcript.recordings.map((recording) => {
-      if (!recording.segments.some((segment) => segment.words.some((word) => word.id === wordId))) {
-        return recording
-      }
-      return {
-        ...recording,
-        segments: recording.segments.map((segment) =>
-          segment.words.some((word) => word.id === wordId)
-            ? {
-                ...segment,
-                words: segment.words.map((word) =>
-                  word.id === wordId ? { ...word, corrected } : word
-                )
-              }
-            : segment
-        )
-      }
-    })
+    recordings: transcript.recordings.map((recording) =>
+      recording.segments.some((segment) => changesWord(segment.words))
+        ? {
+            ...recording,
+            segments: recording.segments.map((segment) =>
+              changesWord(segment.words)
+                ? {
+                    ...segment,
+                    words: segment.words.map((word) =>
+                      word.id === wordId ? { ...word, corrected } : word
+                    )
+                  }
+                : segment
+            )
+          }
+        : recording
+    )
   }
+}
+
+/** Henüz Correction yapılmamış Suspect Word sayısı. */
+export function countUncorrected(transcript: Transcript): number {
+  let count = 0
+  for (const recording of transcript.recordings) {
+    for (const segment of recording.segments) {
+      for (const word of segment.words) if (word.isSuspect && word.corrected === null) count += 1
+    }
+  }
+  return count
 }
 
 export function useTranscript(meetingId: string): TranscriptApi {
   const [transcript, setTranscript] = useState<Transcript | null>(null)
+  // Aynı kelimenin kaydet/geri al çağrıları sırayla çalışır; IPC dönüşleri karışıp ekranı
+  // veritabanından farklı bırakmasın.
+  const inFlight = useRef(new Map<string, Promise<unknown>>())
 
   useEffect(() => {
     let cancelled = false
@@ -54,26 +68,48 @@ export function useTranscript(meetingId: string): TranscriptApi {
     }
   }, [meetingId])
 
-  const correct = useCallback(async (wordId: string, corrected: string): Promise<boolean> => {
-    const result = await window.api.transcript.correct(wordId, corrected)
-    if (!result.ok) {
-      toast.error(result.message)
-      return false
-    }
-    // Main metni kırpar; ekranda da aynı değer görünsün.
-    setTranscript((current) => current && withCorrection(current, wordId, corrected.trim()))
-    return true
-  }, [])
+  // Çağrıyı kelimenin sırasına ekler; başarılıysa ekrandaki Correction'ı `toCorrected` ile günceller.
+  const update = useCallback(
+    <T>(
+      wordId: string,
+      call: () => Promise<TranscriptResult<T>>,
+      toCorrected: (value: T) => string | null
+    ): Promise<boolean> => {
+      const run = (inFlight.current.get(wordId) ?? Promise.resolve()).then(async () => {
+        const result = await call()
+        if (!result.ok) {
+          toast.error(result.message)
+          return false
+        }
+        const corrected = toCorrected(result.value)
+        setTranscript((current) => current && withCorrection(current, wordId, corrected))
+        return true
+      })
+      inFlight.current.set(wordId, run)
+      return run
+    },
+    []
+  )
 
-  const revert = useCallback(async (wordId: string): Promise<boolean> => {
-    const result = await window.api.transcript.revert(wordId)
-    if (!result.ok) {
-      toast.error(result.message)
-      return false
-    }
-    setTranscript((current) => current && withCorrection(current, wordId, null))
-    return true
-  }, [])
+  const correct = useCallback(
+    (wordId: string, corrected: string) =>
+      // Main metni kırpıp saklar; ekranda da saklanan değer görünür.
+      update(
+        wordId,
+        () => window.api.transcript.correct(wordId, corrected),
+        (stored) => stored
+      ),
+    [update]
+  )
+  const revert = useCallback(
+    (wordId: string) =>
+      update(
+        wordId,
+        () => window.api.transcript.revert(wordId),
+        () => null
+      ),
+    [update]
+  )
 
   return { transcript, correct, revert }
 }

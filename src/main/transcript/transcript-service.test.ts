@@ -60,10 +60,10 @@ describe('Transcript servisi', () => {
   it('boş ve çok kelimeli Correction olduğu gibi saklanır (kenar boşlukları kırpılır)', () => {
     const { transcripts } = setup()
 
-    transcripts.correct('w1-2', '   ')
+    expect(transcripts.correct('w1-2', '   ')).toBe('')
     expect(transcripts.get('m1').recordings[0].segments[0].words[1].corrected).toBe('')
 
-    transcripts.correct('w1-2', '  big  new world ')
+    expect(transcripts.correct('w1-2', '  big  new world ')).toBe('big  new world')
     expect(transcripts.get('m1').recordings[0].segments[0].words[1].corrected).toBe(
       'big  new world'
     )

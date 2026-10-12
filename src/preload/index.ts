@@ -42,7 +42,7 @@ const api = {
   transcript: {
     get: (meetingId: string): Promise<TranscriptResult<Transcript>> =>
       ipcRenderer.invoke('transcript:get', meetingId),
-    correct: (wordId: string, corrected: string): Promise<TranscriptResult<void>> =>
+    correct: (wordId: string, corrected: string): Promise<TranscriptResult<string>> =>
       ipcRenderer.invoke('transcript:correct', wordId, corrected),
     revert: (wordId: string): Promise<TranscriptResult<void>> =>
       ipcRenderer.invoke('transcript:revert', wordId)

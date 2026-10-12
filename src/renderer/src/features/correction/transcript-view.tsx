@@ -1,8 +1,8 @@
-import { Fragment, memo } from 'react'
+import { Fragment, memo, useMemo } from 'react'
 import type { TranscriptSegment } from '@shared/transcript'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { SuspectWord } from './suspect-word'
-import type { TranscriptApi } from './use-transcript'
+import { countUncorrected, type TranscriptApi } from './use-transcript'
 
 interface SegmentProps {
   segment: TranscriptSegment
@@ -37,19 +37,7 @@ const Segment = memo(function Segment({
 // Transcribed Meeting'in Transcript'i: salt okunur; yalnızca Suspect Word'ler tıklanabilir.
 export function TranscriptView({ api }: { api: TranscriptApi }): React.JSX.Element {
   const { transcript } = api
-  const suspects = transcript
-    ? transcript.recordings.reduce(
-        (total, recording) =>
-          total +
-          recording.segments.reduce(
-            (sum, segment) =>
-              sum +
-              segment.words.filter((word) => word.isSuspect && word.corrected === null).length,
-            0
-          ),
-        0
-      )
-    : 0
+  const suspects = useMemo(() => (transcript ? countUncorrected(transcript) : 0), [transcript])
 
   return (
     <Card>

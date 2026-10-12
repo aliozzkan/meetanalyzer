@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { TranscriptWord } from '@shared/transcript'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
@@ -16,6 +16,7 @@ interface Props {
 export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
   const isCorrected = word.corrected !== null
   const isDeleted = word.corrected === ''
 
@@ -40,7 +41,7 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
       >
         {isDeleted ? <s>{word.text}</s> : (word.corrected ?? word.text)}
       </PopoverTrigger>
-      <PopoverContent align="start">
+      <PopoverContent align="start" initialFocus={inputRef}>
         <form
           className="flex flex-col gap-3"
           onSubmit={(event) => {
@@ -53,7 +54,7 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
           </p>
           <Input
             aria-label="Düzeltme"
-            autoFocus
+            ref={inputRef}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Boş bırakırsan kelime silinir"
