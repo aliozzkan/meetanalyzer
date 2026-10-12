@@ -153,3 +153,15 @@ describe('Approval servisi', () => {
     expect(existsSync(audioFile)).toBe(true)
   })
 })
+
+describe('purgeApprovedAudio klasör kalıntısı', () => {
+  it('yolları zaten temizlenmiş ama klasörü kalmış Approved Meeting de temizlenir', () => {
+    const { approval, db, recordingsDir } = setup()
+    approval.approve('m1')
+    mkdirSync(join(recordingsDir, 'm1', 'r1'), { recursive: true })
+    writeFileSync(join(recordingsDir, 'm1', 'r1', 'mic.wav'), 'kalıntı')
+
+    expect(purgeApprovedAudio({ db, recordingsDir })).toBe(1)
+    expect(existsSync(join(recordingsDir, 'm1'))).toBe(false)
+  })
+})

@@ -1,4 +1,4 @@
-import { rmSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { composeApprovedText } from '../../shared/transcript'
 import type { Db } from '../db/database'
@@ -15,7 +15,8 @@ type RemoveDir = (path: string) => void
 const removeDirRecursive: RemoveDir = (path) => rmSync(path, { recursive: true, force: true })
 
 // Approved Meeting'lerin ses klasörünü siler ve `file_path`'i temizler. Silme başarısızsa yol DB'de kalır ki
-// sonraki çağrı (açılışta) yeniden denesin. Silinen Meeting sayısını döndürür.
+// sonraki çağrı (açılışta) yeniden denesin. Yolları zaten temizlenmiş ama klasörü kalmış Meeting de silinir.
+// Temizlenen Meeting sayısını döndürür.
 export function purgeApprovedAudio({
   db,
   recordingsDir,
@@ -30,15 +31,16 @@ export function purgeApprovedAudio({
 }): number {
   const rows = db
     .prepare(
-      `SELECT DISTINCT m.id FROM meetings m
-       JOIN recordings r ON r.meeting_id = m.id
-       JOIN recording_channels c ON c.recording_id = r.id
-       WHERE m.state = 'approved' AND c.file_path IS NOT NULL ${meetingId ? 'AND m.id = ?' : ''}`
+      `SELECT m.id,
+              EXISTS (SELECT 1 FROM recordings r JOIN recording_channels c ON c.recording_id = r.id
+                      WHERE r.meeting_id = m.id AND c.file_path IS NOT NULL) AS has_paths
+       FROM meetings m WHERE m.state = 'approved' ${meetingId ? 'AND m.id = ?' : ''}`
     )
-    .all(...(meetingId ? [meetingId] : [])) as { id: string }[]
+    .all(...(meetingId ? [meetingId] : [])) as { id: string; has_paths: number }[]
 
   let purged = 0
-  for (const { id } of rows) {
+  for (const { id, has_paths } of rows) {
+    if (!has_paths && !existsSync(join(recordingsDir, id))) continue
     try {
       removeDir(join(recordingsDir, id))
     } catch (error) {
@@ -59,10 +61,12 @@ export function createApprovalService({
   recordingsDir,
   transcripts,
   meetings,
-  removeDir
+  removeDir,
+  now = Date.now
 }: {
   db: Db
   recordingsDir: string
+  now?: () => number
   transcripts: Pick<TranscriptService, 'get'>
   meetings: Pick<MeetingService, 'transition'>
   removeDir?: RemoveDir
@@ -83,7 +87,7 @@ export function createApprovalService({
       const text = composeApprovedText(transcripts.get(meetingId))
       db.prepare(
         'INSERT INTO approved_transcripts (meeting_id, text, created_at) VALUES (?, ?, ?)'
-      ).run(meetingId, text, Date.now())
+      ).run(meetingId, text, now())
       meetings.transition(meetingId, 'approved')
     })()
 

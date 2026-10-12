@@ -5,13 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/u
 // Approved Meeting'in dondurulmuş metni; salt okunur, Correction yok. Recording'ler boş satırla ayrılmıştır.
 export function ApprovedTranscript({ meetingId }: { meetingId: string }): React.JSX.Element {
   const [text, setText] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     void window.api.transcript.approvedText(meetingId).then((result) => {
       if (cancelled) return
       if (result.ok) setText(result.value)
-      else toast.error(result.message)
+      else {
+        toast.error(result.message)
+        setFailed(true)
+      }
     })
     return () => {
       cancelled = true
@@ -24,7 +28,9 @@ export function ApprovedTranscript({ meetingId }: { meetingId: string }): React.
         <CardTitle>Onaylanmış Transcript</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {text === null ? (
+        {failed ? (
+          <p>Metin yüklenemedi.</p>
+        ) : text === null ? (
           <p>Yükleniyor…</p>
         ) : text === '' ? (
           <p>Bu Transcript boş.</p>

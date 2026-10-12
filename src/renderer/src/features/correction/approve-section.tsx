@@ -30,10 +30,17 @@ export function ApproveSection({ meetingId, api, onApproved }: Props): React.JSX
 
   async function approve(): Promise<void> {
     setBusy(true)
-    const result = await window.api.transcript.approve(meetingId)
-    setBusy(false)
-    if (!result.ok) toast.error(result.message)
-    await onApproved()
+    try {
+      const result = await window.api.transcript.approve(meetingId)
+      if (!result.ok) toast.error(result.message)
+    } catch (error) {
+      console.error('Onay başarısız:', error)
+      toast.error('Transcript onaylanamadı.')
+    } finally {
+      setBusy(false)
+      // Başarıda ekran Approved'a geçer; hatada (ör. durum değişmiş) güncel durum okunur.
+      await onApproved()
+    }
   }
 
   return (
