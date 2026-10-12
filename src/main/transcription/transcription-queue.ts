@@ -70,6 +70,8 @@ export function createTranscriptionQueue({
   }
 
   function notify(): void {
+    // Kapanışta DB kapanmış olabilir; durum sorgulanamaz.
+    if (closing) return
     onStatus?.(getStatus())
   }
 
@@ -97,7 +99,10 @@ export function createTranscriptionQueue({
 
   function cancelMeeting(meetingId: string): void {
     db.prepare('DELETE FROM transcription_queue WHERE meeting_id = ?').run(meetingId)
-    if (active?.meetingId === meetingId) stop(active)
+    if (active?.meetingId === meetingId) {
+      stop(active)
+      active = undefined // iptal edilen iş durumda "işleniyor" görünmesin
+    }
     notify()
   }
 
@@ -118,8 +123,9 @@ export function createTranscriptionQueue({
     power.acquire('transcription')
     try {
       for (;;) {
+        if (closing) break
         const next = nextMeetingId()
-        if (!next || closing) break
+        if (!next) break
         await processMeeting(next)
       }
     } finally {
