@@ -16,3 +16,12 @@ export function peakLevel(samples: Float32Array): number {
   }
   return peak
 }
+
+// 16-bit little-endian PCM baytlarını [-1, 1] aralığında float örneklere çevirir (floatToPcm16'nın tersi).
+// Bayt görünümü hizasız olabilir (ArrayBuffer ortasında); bu yüzden DataView kullanılır.
+export function pcm16ToFloat(pcm: Uint8Array): Float32Array {
+  const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength)
+  const samples = new Float32Array(Math.floor(pcm.byteLength / 2))
+  for (let i = 0; i < samples.length; i++) samples[i] = view.getInt16(i * 2, true) / 0x8000
+  return samples
+}

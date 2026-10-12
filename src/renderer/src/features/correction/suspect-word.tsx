@@ -1,9 +1,11 @@
+import { Volume2Icon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { wordDisplay, type TranscriptWord } from '@shared/transcript'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { cn } from '@renderer/lib/utils'
+import { playWordAudio, stopWordAudio } from './word-player'
 
 interface Props {
   word: TranscriptWord
@@ -28,7 +30,12 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
     <Popover
       open={open}
       onOpenChange={(next) => {
-        if (next) setDraft(word.corrected ?? word.text)
+        if (next) {
+          setDraft(word.corrected ?? word.text)
+          void playWordAudio(word.id)
+        } else {
+          stopWordAudio()
+        }
         setOpen(next)
       }}
     >
@@ -59,7 +66,15 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Boş bırakırsan kelime silinir"
           />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="neutral"
+              onClick={() => void playWordAudio(word.id)}
+            >
+              <Volume2Icon /> Tekrar çal
+            </Button>
             <Button type="submit" size="sm">
               Kaydet
             </Button>

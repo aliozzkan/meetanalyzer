@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { Language, MeetingResult, MeetingSummary } from '../shared/meeting'
 import type { ModelState } from '../shared/model'
-import type { Transcript, TranscriptResult } from '../shared/transcript'
+import type { Transcript, TranscriptResult, WordAudio } from '../shared/transcript'
 import type { TranscriptionStatus } from '../shared/transcription'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
 
@@ -44,6 +44,8 @@ const api = {
       ipcRenderer.invoke('transcript:get', meetingId),
     correct: (wordId: string, corrected: string): Promise<TranscriptResult<string>> =>
       ipcRenderer.invoke('transcript:correct', wordId, corrected),
+    wordAudio: (wordId: string): Promise<TranscriptResult<WordAudio>> =>
+      ipcRenderer.invoke('transcript:word-audio', wordId),
     revert: (wordId: string): Promise<TranscriptResult<void>> =>
       ipcRenderer.invoke('transcript:revert', wordId)
   },

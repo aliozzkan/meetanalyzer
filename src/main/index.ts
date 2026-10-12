@@ -8,10 +8,11 @@ import { createAppModelService, getModelPath } from './model/app-model'
 import { createStateBroadcaster, registerModelIpc } from './model/ipc'
 import { createMeetingService } from './meetings/meeting-service'
 import { getWhisperPaths } from './whisper/paths'
-import { SUSPECT_WORD_THRESHOLD, WHISPER_NICE } from './config'
+import { SUSPECT_WORD_PLAYBACK_PADDING_MS, SUSPECT_WORD_THRESHOLD, WHISPER_NICE } from './config'
 import { performanceCoreCount } from './transcription/cpu'
 import { transcribeRecording } from './transcription/transcribe-recording'
 import { registerTranscriptIpc } from './transcript/ipc'
+import { createWordAudioReader } from './transcript/word-audio'
 import { createTranscriptService } from './transcript/transcript-service'
 import { createStatusBroadcaster, registerTranscriptionIpc } from './transcription/ipc'
 import {
@@ -158,7 +159,14 @@ app.whenReady().then(() => {
   registerMeetingIpc(meetings)
   registerRecordingIpc(recordings)
   registerTranscriptionIpc(transcriptions)
-  registerTranscriptIpc(createTranscriptService({ db: database }))
+  registerTranscriptIpc(
+    createTranscriptService({ db: database }),
+    createWordAudioReader({
+      db: database,
+      recordingsDir,
+      paddingMs: SUSPECT_WORD_PLAYBACK_PADDING_MS
+    })
+  )
 
   // Renderer yalnızca mikrofon izni isteyebilir; kamera ve diğer izin istekleri reddedilir.
   session.defaultSession.setPermissionRequestHandler(

@@ -33,6 +33,7 @@ export type TranscriptErrorCode =
   | 'word-not-found'
   | 'not-suspect'
   | 'not-correctable' // Meeting Transcribed değil (ör. Approved: Transcript dondurulmuştur)
+  | 'audio-missing' // ses dosyası yok (ör. Approve sonrası silinmiş)
   | 'not-transcribed' // Meeting'in Transcript'i henüz yok
   | 'invalid-input'
   | 'internal-error'
@@ -60,4 +61,10 @@ export function countUncorrected(transcript: Transcript): number {
     }
   }
   return count
+}
+
+/** Bir Suspect Word çevresinden kesilmiş mono 16-bit little-endian PCM. */
+export interface WordAudio {
+  pcm: Uint8Array
+  sampleRate: number
 }
