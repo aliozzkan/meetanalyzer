@@ -11,6 +11,8 @@ import { getWhisperPaths } from './whisper/paths'
 import { SUSPECT_WORD_THRESHOLD, WHISPER_NICE } from './config'
 import { performanceCoreCount } from './transcription/cpu'
 import { transcribeRecording } from './transcription/transcribe-recording'
+import { registerTranscriptIpc } from './transcript/ipc'
+import { createTranscriptService } from './transcript/transcript-service'
 import { createStatusBroadcaster, registerTranscriptionIpc } from './transcription/ipc'
 import {
   createTranscriptionQueue,
@@ -156,6 +158,7 @@ app.whenReady().then(() => {
   registerMeetingIpc(meetings)
   registerRecordingIpc(recordings)
   registerTranscriptionIpc(transcriptions)
+  registerTranscriptIpc(createTranscriptService({ db: database }))
 
   // Renderer yalnızca mikrofon izni isteyebilir; kamera ve diğer izin istekleri reddedilir.
   session.defaultSession.setPermissionRequestHandler(

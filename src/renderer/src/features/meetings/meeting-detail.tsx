@@ -2,6 +2,8 @@ import { ArrowLeftIcon } from 'lucide-react'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import { TranscriptView } from '../correction/transcript-view'
+import { useTranscript } from '../correction/use-transcript'
 import { RecordingControls } from '../recording/recording-controls'
 import { useRecorder } from '../recording/use-recorder'
 import { formatMeetingDate } from './format-date'
@@ -18,7 +20,7 @@ interface Props {
   onBack: () => void
 }
 
-// Correction (issue 10) alanları sonraki issue'larda bu ekrana eklenir.
+// Approve (issue 12) alanı sonraki issue'da bu ekrana eklenir.
 export function MeetingDetail({ api, transcription, meetingId, onBack }: Props): React.JSX.Element {
   const meeting = api.meetings.find((candidate) => candidate.id === meetingId)
   const recorder = useRecorder(meetingId, api.refresh)
@@ -56,6 +58,8 @@ export function MeetingDetail({ api, transcription, meetingId, onBack }: Props):
 
           <MeetingTranscriptionStatus meeting={meeting} transcription={transcription} />
 
+          {meeting.state === 'transcribed' && <CorrectionSection meetingId={meeting.id} />}
+
           <Card>
             <CardHeader>
               <CardTitle>Kayıtlar</CardTitle>
@@ -73,4 +77,10 @@ export function MeetingDetail({ api, transcription, meetingId, onBack }: Props):
       )}
     </div>
   )
+}
+
+// Transcript yalnızca Transcribed Meeting'de yüklenir; bu yüzden ayrı bir bileşendir.
+function CorrectionSection({ meetingId }: { meetingId: string }): React.JSX.Element {
+  const api = useTranscript(meetingId)
+  return <TranscriptView api={api} />
 }

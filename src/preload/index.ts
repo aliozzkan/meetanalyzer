@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { Language, MeetingResult, MeetingSummary } from '../shared/meeting'
 import type { ModelState } from '../shared/model'
+import type { Transcript, TranscriptResult } from '../shared/transcript'
 import type { TranscriptionStatus } from '../shared/transcription'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
 
@@ -37,6 +38,14 @@ const api = {
       ipcRenderer.on('transcription:status', listener)
       return () => ipcRenderer.removeListener('transcription:status', listener)
     }
+  },
+  transcript: {
+    get: (meetingId: string): Promise<TranscriptResult<Transcript>> =>
+      ipcRenderer.invoke('transcript:get', meetingId),
+    correct: (wordId: string, corrected: string): Promise<TranscriptResult<void>> =>
+      ipcRenderer.invoke('transcript:correct', wordId, corrected),
+    revert: (wordId: string): Promise<TranscriptResult<void>> =>
+      ipcRenderer.invoke('transcript:revert', wordId)
   },
   model: {
     getState: (): Promise<ModelState> => ipcRenderer.invoke('model:get-state'),
