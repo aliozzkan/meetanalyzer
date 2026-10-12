@@ -1,8 +1,8 @@
 import { Fragment, memo, useMemo } from 'react'
-import type { TranscriptSegment } from '@shared/transcript'
+import { countUncorrected, type TranscriptSegment } from '@shared/transcript'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { SuspectWord } from './suspect-word'
-import { countUncorrected, type TranscriptApi } from './use-transcript'
+import type { TranscriptApi } from './use-transcript'
 
 interface SegmentProps {
   segment: TranscriptSegment

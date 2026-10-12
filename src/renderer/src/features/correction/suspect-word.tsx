@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { TranscriptWord } from '@shared/transcript'
+import { wordDisplay, type TranscriptWord } from '@shared/transcript'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
@@ -18,7 +18,7 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
   const [draft, setDraft] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const isCorrected = word.corrected !== null
-  const isDeleted = word.corrected === ''
+  const display = wordDisplay(word)
 
   async function save(): Promise<void> {
     if (await onCorrect(word.id, draft)) setOpen(false)
@@ -39,7 +39,7 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
           isCorrected ? 'bg-main/20' : 'bg-yellow-200 text-black'
         )}
       >
-        {isDeleted ? <s>{word.text}</s> : (word.corrected ?? word.text)}
+        {display.kind === 'deleted' ? <s>{display.text}</s> : display.text}
       </PopoverTrigger>
       <PopoverContent align="start" initialFocus={inputRef}>
         <form

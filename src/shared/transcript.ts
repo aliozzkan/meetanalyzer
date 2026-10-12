@@ -38,3 +38,26 @@ export type TranscriptErrorCode =
   | 'internal-error'
 
 export type TranscriptResult<T> = IpcResult<T, TranscriptErrorCode>
+
+/** Ekranda bir kelimenin nasıl gösterileceği: ham metin, Correction ya da silinmiş (üstü çizili ham metin). */
+export type WordDisplay =
+  | { kind: 'raw'; text: string }
+  | { kind: 'corrected'; text: string }
+  | { kind: 'deleted'; text: string }
+
+export function wordDisplay(word: TranscriptWord): WordDisplay {
+  if (word.corrected === null) return { kind: 'raw', text: word.text }
+  if (word.corrected === '') return { kind: 'deleted', text: word.text }
+  return { kind: 'corrected', text: word.corrected }
+}
+
+/** Henüz Correction yapılmamış Suspect Word sayısı. */
+export function countUncorrected(transcript: Transcript): number {
+  let count = 0
+  for (const recording of transcript.recordings) {
+    for (const segment of recording.segments) {
+      for (const word of segment.words) if (word.isSuspect && word.corrected === null) count += 1
+    }
+  }
+  return count
+}

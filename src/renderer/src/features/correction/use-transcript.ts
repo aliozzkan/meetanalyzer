@@ -39,17 +39,6 @@ function withCorrection(
   }
 }
 
-/** Henüz Correction yapılmamış Suspect Word sayısı. */
-export function countUncorrected(transcript: Transcript): number {
-  let count = 0
-  for (const recording of transcript.recordings) {
-    for (const segment of recording.segments) {
-      for (const word of segment.words) if (word.isSuspect && word.corrected === null) count += 1
-    }
-  }
-  return count
-}
-
 export function useTranscript(meetingId: string): TranscriptApi {
   const [transcript, setTranscript] = useState<Transcript | null>(null)
   // Aynı kelimenin kaydet/geri al çağrıları sırayla çalışır; IPC dönüşleri karışıp ekranı
