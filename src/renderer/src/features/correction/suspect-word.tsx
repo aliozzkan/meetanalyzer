@@ -1,5 +1,5 @@
 import { Volume2Icon } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { wordDisplay, type TranscriptWord } from '@shared/transcript'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
@@ -22,14 +22,31 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
   const isCorrected = word.corrected !== null
   const display = wordDisplay(word)
 
+  // Ekrandan çıkarken (ör. Meeting değişince) çalan ses sürmesin.
+  const openRef = useRef(false)
+  useEffect(
+    () => () => {
+      if (openRef.current) stopWordAudio()
+    },
+    []
+  )
+
+  // Controlled popover'ı kodla kapatmak onOpenChange'i tetiklemez; sesi burada durdururuz.
+  function close(): void {
+    openRef.current = false
+    stopWordAudio()
+    setOpen(false)
+  }
+
   async function save(): Promise<void> {
-    if (await onCorrect(word.id, draft)) setOpen(false)
+    if (await onCorrect(word.id, draft)) close()
   }
 
   return (
     <Popover
       open={open}
       onOpenChange={(next) => {
+        openRef.current = next
         if (next) {
           setDraft(word.corrected ?? word.text)
           void playWordAudio(word.id)
@@ -84,7 +101,7 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
                 size="sm"
                 variant="neutral"
                 onClick={async () => {
-                  if (await onRevert(word.id)) setOpen(false)
+                  if (await onRevert(word.id)) close()
                 }}
               >
                 Geri al
