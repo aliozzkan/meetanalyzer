@@ -11,6 +11,7 @@ import { getWhisperPaths } from './whisper/paths'
 import { SUSPECT_WORD_PLAYBACK_PADDING_MS, SUSPECT_WORD_THRESHOLD, WHISPER_NICE } from './config'
 import { performanceCoreCount } from './transcription/cpu'
 import { transcribeRecording } from './transcription/transcribe-recording'
+import { createApprovalService, purgeApprovedAudio } from './transcript/approval-service'
 import { registerTranscriptIpc } from './transcript/ipc'
 import { createWordAudioReader } from './transcript/word-audio'
 import { createTranscriptService } from './transcript/transcript-service'
@@ -111,6 +112,14 @@ app.whenReady().then(() => {
     console.error('Yarım kalan Transcription toparlanamadı:', error)
   }
 
+  // Onaydan sonra silinemeyen ses klasörleri açılışta yeniden denenir.
+  try {
+    const purged = purgeApprovedAudio({ db, recordingsDir })
+    if (purged > 0) console.log(`Onaylanmış ${purged} Meeting'in sesleri silindi.`)
+  } catch (error) {
+    console.error('Onaylanmış Meeting sesleri silinemedi:', error)
+  }
+
   // Uyku engeli sebepleri (kayıt, ileride transcription) tek bir güç modülünde toplanır.
   const power = createPowerGuard(powerSaveBlocker)
   recordings = createRecordingService({ db, recordingsDir, requestMicrophoneAccess, power })
@@ -159,12 +168,19 @@ app.whenReady().then(() => {
   registerMeetingIpc(meetings)
   registerRecordingIpc(recordings)
   registerTranscriptionIpc(transcriptions)
+  const transcriptService = createTranscriptService({ db: database })
   registerTranscriptIpc(
-    createTranscriptService({ db: database }),
+    transcriptService,
     createWordAudioReader({
       db: database,
       recordingsDir,
       paddingMs: SUSPECT_WORD_PLAYBACK_PADDING_MS
+    }),
+    createApprovalService({
+      db: database,
+      recordingsDir,
+      transcripts: transcriptService,
+      meetings
     })
   )
 

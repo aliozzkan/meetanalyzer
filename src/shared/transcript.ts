@@ -34,6 +34,8 @@ export type TranscriptErrorCode =
   | 'not-suspect'
   | 'not-correctable' // Meeting Transcribed değil (ör. Approved: Transcript dondurulmuştur)
   | 'audio-missing' // ses dosyası yok (ör. Approve sonrası silinmiş)
+  | 'not-approvable' // yalnızca Transcribed Meeting onaylanabilir
+  | 'not-approved' // Meeting'in Approved Transcript'i yok
   | 'not-transcribed' // Meeting'in Transcript'i henüz yok
   | 'invalid-input'
   | 'internal-error'
@@ -67,4 +69,19 @@ export function countUncorrected(transcript: Transcript): number {
 export interface WordAudio {
   pcm: Uint8Array
   sampleRate: number
+}
+
+// Approved Transcript metni: her kelime Correction varsa onun metniyle yazılır (boş Correction kelimeyi düşürür),
+// boşluklar tek boşluğa indirilir. Aynı Recording'in segmentleri tek paragraftır; Recording'ler boş satırla ayrılır.
+export function composeApprovedText(transcript: Transcript): string {
+  return transcript.recordings
+    .map((recording) =>
+      recording.segments
+        .flatMap((segment) => segment.words.map((word) => word.corrected ?? word.text))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    )
+    .filter((paragraph) => paragraph !== '')
+    .join('\n\n')
 }

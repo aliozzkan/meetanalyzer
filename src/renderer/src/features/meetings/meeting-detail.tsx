@@ -2,6 +2,8 @@ import { ArrowLeftIcon } from 'lucide-react'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import { ApprovedTranscript } from '../correction/approved-transcript'
+import { ApproveSection } from '../correction/approve-section'
 import { TranscriptView } from '../correction/transcript-view'
 import { useTranscript } from '../correction/use-transcript'
 import { RecordingControls } from '../recording/recording-controls'
@@ -20,7 +22,6 @@ interface Props {
   onBack: () => void
 }
 
-// Approve (issue 12) alanı sonraki issue'da bu ekrana eklenir.
 export function MeetingDetail({ api, transcription, meetingId, onBack }: Props): React.JSX.Element {
   const meeting = api.meetings.find((candidate) => candidate.id === meetingId)
   const recorder = useRecorder(meetingId, api.refresh)
@@ -59,7 +60,10 @@ export function MeetingDetail({ api, transcription, meetingId, onBack }: Props):
           <MeetingTranscriptionStatus meeting={meeting} transcription={transcription} />
 
           {meeting.state === 'transcribed' && (
-            <CorrectionSection key={meeting.id} meetingId={meeting.id} />
+            <CorrectionSection key={meeting.id} meetingId={meeting.id} onApproved={api.refresh} />
+          )}
+          {meeting.state === 'approved' && (
+            <ApprovedTranscript key={meeting.id} meetingId={meeting.id} />
           )}
 
           <Card>
@@ -82,7 +86,18 @@ export function MeetingDetail({ api, transcription, meetingId, onBack }: Props):
 }
 
 // Transcript yalnızca Transcribed Meeting'de yüklenir; bu yüzden ayrı bir bileşendir.
-function CorrectionSection({ meetingId }: { meetingId: string }): React.JSX.Element {
+function CorrectionSection({
+  meetingId,
+  onApproved
+}: {
+  meetingId: string
+  onApproved: () => Promise<void>
+}): React.JSX.Element {
   const api = useTranscript(meetingId)
-  return <TranscriptView api={api} />
+  return (
+    <>
+      <TranscriptView api={api} />
+      <ApproveSection meetingId={meetingId} api={api} onApproved={onApproved} />
+    </>
+  )
 }

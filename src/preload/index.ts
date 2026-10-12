@@ -46,6 +46,10 @@ const api = {
       ipcRenderer.invoke('transcript:correct', wordId, corrected),
     wordAudio: (wordId: string): Promise<TranscriptResult<WordAudio>> =>
       ipcRenderer.invoke('transcript:word-audio', wordId),
+    approve: (meetingId: string): Promise<TranscriptResult<void>> =>
+      ipcRenderer.invoke('transcript:approve', meetingId),
+    approvedText: (meetingId: string): Promise<TranscriptResult<string>> =>
+      ipcRenderer.invoke('transcript:approved-text', meetingId),
     revert: (wordId: string): Promise<TranscriptResult<void>> =>
       ipcRenderer.invoke('transcript:revert', wordId)
   },

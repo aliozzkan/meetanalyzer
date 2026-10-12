@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: 10
 
 # Approve: Approved Transcript'i dondur ve sesleri sil
@@ -14,11 +14,13 @@ Spec: [../spec.md](../spec.md) → "6. Approve"
 
 ## Kabul kriterleri
 
-- [ ] Onaydan sonra metin değiştirilemez ve ses dosyaları diskte yoktur.
-- [ ] Birleştirme kuralı için birim testleri (boş, çok kelimeli Correction, noktalama).
+- [x] Onaydan sonra metin değiştirilemez ve ses dosyaları diskte yoktur.
+- [x] Birleştirme kuralı için birim testleri (boş, çok kelimeli Correction, noktalama).
 
 ## Comments
 
 **2026-10-11 (issue 02 review'undan):** Silme koruması şu an `state === 'approved'`. Yaşam döngüsü Awaiting Analysis / Completed durumlarını da kapsadığında bu guard "Approved ve sonrası" olacak şekilde genişletilmeli (Analysis dilimi).
 
 **2026-10-11 (issue 03'ten):** Ses silme sırasında `recording_channels.file_path` temizlenir; yol `recordingsDir`'e göredir (`<meetingId>/<recordingId>/mic.wav`).
+
+**2026-10-12 (implementasyon notu):** Birleştirme `composeApprovedText` (`src/shared/transcript.ts`): aynı Recording'in segmentleri tek paragraf, Recording'ler boş satırla ayrılır, tamamen silinen Recording paragraf bırakmaz. Ses silme `purgeApprovedAudio`: onay sonrası ve her açılışta çalışır; silme başarısızsa `file_path` DB'de kalır ve açılışta yeniden denenir. Onay/Correction guard'ı yalnızca `transcribed` durumunu kabul eder. **Elle doğrulanmadı:** gerçek uygulamada onaydan sonra `userData/recordings/<meetingId>` klasörünün diskten kalktığı.
