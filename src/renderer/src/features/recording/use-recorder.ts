@@ -1,159 +1,40 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
-import { SILENT_MIC_PEAK_THRESHOLD, SILENT_MIC_WARNING_MS } from '@shared/audio'
-import { createSilenceMonitor } from '@shared/silence-monitor'
-import { startMicCapture, type MicCapture } from './mic-capture'
+import { startMicCapture } from './mic-capture'
+import {
+  createRecorderController,
+  type RecorderController,
+  type RecorderSnapshot
+} from './recorder-controller'
 
-export type RecorderState = 'idle' | 'starting' | 'recording' | 'stopping'
-
-export interface Recorder {
-  state: RecorderState
-  /** 0..1, son ses bloğunun tepe seviyesi. */
-  level: number
-  /** Kaydın şu ana kadarki süresi (alınan sese göre). */
-  elapsedMs: number
-  /** Eşik süresi boyunca sessizlik: mikrofon sessize alınmış ya da yanlış seçilmiş olabilir. */
-  silent: boolean
-  /** Mikrofon izni verilmediği için kayıt başlamadı. */
-  microphoneDenied: boolean
-  start: () => Promise<void>
+export interface Recorder extends RecorderSnapshot {
+  start: (meetingId: string) => Promise<void>
   stop: () => Promise<void>
+  /** Meeting silinirken ya da uygulama kapanırken: Recording bitirilir, hata gösterilmez. */
+  stopQuietly: () => Promise<void>
 }
 
-interface ActiveCapture {
-  recordingId: string
-  capture: MicCapture
-  /** Parçalar sırayla gönderilir; durdururken hepsinin işlenmesi beklenir. */
-  appends: Promise<unknown>
-  /** Durdurma başladı: yakalamanın son parçası hâlâ gönderilmeli, yeni durdurma istekleri yok sayılır. */
-  finishing: boolean
-  /** Ana süreç bir parçayı reddetti (kayıt artık sürmüyor); hata yalnızca bir kez bildirilir. */
-  failed: boolean
-}
-
-function isPermissionError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'NotAllowedError'
-}
-
-export function useRecorder(meetingId: string, onRecordingsChanged: () => void): Recorder {
-  const [state, setState] = useState<RecorderState>('idle')
-  const [level, setLevel] = useState(0)
-  const [elapsedMs, setElapsedMs] = useState(0)
-  const [silent, setSilent] = useState(false)
-  const [microphoneDenied, setMicrophoneDenied] = useState(false)
-  const active = useRef<ActiveCapture | null>(null)
-  const unmounted = useRef(false)
-
-  // quiet: ekrandan çıkılırken ya da Meeting silinirken kullanıcıya hata gösterme.
-  const finish = useCallback(
-    async (quiet = false): Promise<void> => {
-      const current = active.current
-      if (!current || current.finishing) return
-      current.finishing = true
-      if (!unmounted.current) setState('stopping')
-      try {
-        // Oturum, son parça gönderilip tüm append'ler bitene kadar açık kalır: capture.stop() kalan sesi
-        // son bir parça olarak onChunk'a verir.
-        await current.capture.stop()
-        await current.appends
-      } finally {
-        // Yakalama düzgün kapanmasa bile ana süreçteki Recording bitirilir; aksi halde takılı kalır.
-        active.current = null
-        const result = await window.api.recordings.stop(current.recordingId)
-        // Ana süreç kaydı zaten reddettiyse (ör. Meeting silindi) kullanıcı bunu bir kez görmüştür.
-        if (!result.ok && !current.failed && !quiet) toast.error(result.message)
-        if (!unmounted.current) {
-          setLevel(0)
-          setSilent(false)
-          setState('idle')
-          onRecordingsChanged()
-        }
-      }
-    },
-    [onRecordingsChanged]
-  )
-
-  const start = useCallback(async (): Promise<void> => {
-    setMicrophoneDenied(false)
-    setState('starting')
-    const started = await window.api.recordings.start(meetingId)
-    if (!started.ok) {
-      if (started.code === 'microphone-denied') setMicrophoneDenied(true)
-      else toast.error(started.message)
-      setState('idle')
-      return
-    }
-    const recordingId = started.value.id
-
-    const monitor = createSilenceMonitor({
-      silenceMs: SILENT_MIC_WARNING_MS,
-      peakThreshold: SILENT_MIC_PEAK_THRESHOLD
+// Uygulama kabuğunda (yönlendirmenin üstünde) bir kez çağrılır: ekranlar arası gezinmek Recording'i durdurmaz.
+// `onRecordingsChanged` kararlı olmalıdır (controller ilk render'daki değeri saklar).
+export function useRecorder(onRecordingsChanged: () => void | Promise<void>): Recorder {
+  const [controller] = useState<RecorderController>(() =>
+    createRecorderController({
+      recordings: window.api.recordings,
+      startMicCapture,
+      notifyError: (message) => toast.error(message),
+      onRecordingsChanged: () => void onRecordingsChanged()
     })
-    let elapsed = 0
-    let capture: MicCapture
-    try {
-      capture = await startMicCapture({
-        onChunk: (pcm) => {
-          const current = active.current
-          if (!current) return
-          current.appends = current.appends.then(async () => {
-            const result = await window.api.recordings.append(recordingId, pcm)
-            // Kayıt artık yazılamıyor (Meeting silindi, disk hatası…): yakalamayı bırak ve kaydı bitir.
-            if (!result.ok && !current.failed) {
-              current.failed = true
-              toast.error(result.message)
-              void finish(true)
-            }
-          })
-        },
-        onLevel: (peak, durationMs) => {
-          elapsed += durationMs
-          setLevel(peak)
-          setElapsedMs(elapsed)
-          setSilent(monitor.feed(peak, durationMs))
-        }
-      })
-    } catch (error) {
-      // Mikrofon açılamadı (izin, cihaz yok, zaman aşımı): boş bir Recording bırakma.
-      await window.api.recordings.discard(recordingId)
-      if (isPermissionError(error)) setMicrophoneDenied(true)
-      else
-        toast.error(`Mikrofon açılamadı: ${error instanceof Error ? error.message : String(error)}`)
-      setState('idle')
-      return
-    }
+  )
+  const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
 
-    // Mikrofon açılırken ekrandan çıkıldıysa hiçbir şey kaydedilmemiştir: boş bir Recording bırakmadan sil.
-    if (unmounted.current) {
-      await capture.stop()
-      await window.api.recordings.discard(recordingId)
-      return
-    }
-    active.current = {
-      recordingId,
-      capture,
-      appends: Promise.resolve(),
-      finishing: false,
-      failed: false
-    }
-    setElapsedMs(0)
-    setState('recording')
-  }, [meetingId, finish])
+  // Kabuk söküldüğünde süren kayıt bitirilmeye çalışılır. Asıl güvence main'dedir: sayfa yenileme, renderer çökmesi
+  // ve pencere kapanışında `recordings.stopAll()` çalışır (src/main/index.ts).
+  useEffect(() => () => void controller.stopQuietly(), [controller])
 
-  const stop = useCallback(() => finish(), [finish])
-
-  // Ekran kapanırken (ör. listeye dönüş, Meeting silindi) süren kayıt düzgünce bitirilir.
-  const finishRef = useRef(finish)
-  useEffect(() => {
-    finishRef.current = finish
-  })
-  useEffect(() => {
-    unmounted.current = false
-    return () => {
-      unmounted.current = true
-      void finishRef.current(true)
-    }
-  }, [])
-
-  return { state, level, elapsedMs, silent, microphoneDenied, start, stop }
+  return {
+    ...snapshot,
+    start: controller.start,
+    stop: controller.stop,
+    stopQuietly: controller.stopQuietly
+  }
 }

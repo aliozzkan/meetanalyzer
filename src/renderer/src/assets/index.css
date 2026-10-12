@@ -137,3 +137,11 @@
     @apply font-heading;
   }
 }
+
+/* macOS hiddenInset başlık çubuğu: boş alanlar pencereyi sürükler, içindeki kontroller tıklanabilir kalır. */
+.app-drag {
+  -webkit-app-region: drag;
+}
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}

@@ -2,6 +2,7 @@ import { MicIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
+import { isBusyWith } from './recorder-controller'
 import type { Recorder } from './use-recorder'
 
 function formatElapsed(ms: number): string {
@@ -13,21 +14,27 @@ function formatElapsed(ms: number): string {
 
 interface Props {
   recorder: Recorder
+  /** Kontrollerin ait olduğu Meeting; recorder uygulama genelindedir, başka bir Meeting'de de kayıt sürüyor olabilir. */
+  meetingId: string
 }
 
-export function RecordingControls({ recorder }: Props): React.JSX.Element {
-  const busy = recorder.state === 'starting' || recorder.state === 'stopping'
-  const recording = recorder.state === 'recording'
+export function RecordingControls({ recorder, meetingId }: Props): React.JSX.Element {
+  // Recorder uygulama genelinde tek; yalnızca bu Meeting'in kaydıysa durumunu yansıtırız.
+  const here = isBusyWith(recorder, meetingId)
+  const busy = here && (recorder.state === 'starting' || recorder.state === 'stopping')
+  const recording = here && recorder.state === 'recording'
+  const busyElsewhere = recorder.state !== 'idle' && !here
+  const start = (): void => void recorder.start(meetingId)
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-4">
-        {recording || recorder.state === 'stopping' ? (
+        {here && (recording || recorder.state === 'stopping') ? (
           <Button onClick={recorder.stop} disabled={busy}>
             <SquareIcon /> Kaydı durdur
           </Button>
         ) : (
-          <Button onClick={recorder.start} disabled={busy}>
+          <Button onClick={start} disabled={busy || busyElsewhere}>
             <MicIcon /> Kaydı başlat
           </Button>
         )}
@@ -57,7 +64,7 @@ export function RecordingControls({ recorder }: Props): React.JSX.Element {
         </Alert>
       )}
 
-      {recorder.microphoneDenied && (
+      {recorder.microphoneDeniedFor === meetingId && (
         <Alert variant="destructive">
           <TriangleAlertIcon />
           <AlertTitle>Mikrofon erişimi verilmedi</AlertTitle>
@@ -70,7 +77,7 @@ export function RecordingControls({ recorder }: Props): React.JSX.Element {
               <Button size="sm" onClick={() => void window.api.recordings.openMicrophoneSettings()}>
                 Sistem Ayarları&apos;nı aç
               </Button>
-              <Button size="sm" variant="neutral" onClick={recorder.start} disabled={busy}>
+              <Button size="sm" variant="neutral" onClick={start} disabled={busy}>
                 Tekrar dene
               </Button>
             </div>

@@ -1,5 +1,6 @@
 import { TriangleAlertIcon } from 'lucide-react'
 import type { MeetingSummary } from '@shared/meeting'
+import { isProcessing } from '@shared/transcription'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Progress } from '@renderer/components/ui/progress'
 import type { TranscriptionApi } from './use-transcription'
@@ -7,20 +8,16 @@ import type { TranscriptionApi } from './use-transcription'
 interface Props {
   meeting: MeetingSummary
   transcription: TranscriptionApi
-  /** Liste satırı için tek satırlık özet; ayrıntı ekranı ilerleme çubuğu ve uyarıları da gösterir. */
-  compact?: boolean
 }
 
 // Transcribing: "Sırada" ya da işleniyor + yüzde; Closed: son Transcription hatası.
 export function MeetingTranscriptionStatus({
   meeting,
-  transcription,
-  compact = false
+  transcription
 }: Props): React.JSX.Element | null {
-  const { active, queued } = transcription.status
+  const { active } = transcription.status
 
   if (meeting.state === 'closed' && meeting.lastError) {
-    if (compact) return <span className="text-sm text-destructive">{meeting.lastError}</span>
     return (
       <Alert variant="destructive">
         <TriangleAlertIcon />
@@ -37,16 +34,9 @@ export function MeetingTranscriptionStatus({
 
   if (meeting.state !== 'transcribing') return null
 
-  const isActive = active?.meetingId === meeting.id
-  const isQueued = queued.includes(meeting.id)
-  // Durum olayı henüz gelmediyse (ilk anlar) ne sırada ne işleniyor görünür: sırada say.
-  const waiting = !isActive || isQueued
-  const percent = isActive ? active.percent : null
-
-  if (compact) {
-    if (waiting) return <span className="text-sm">Sırada</span>
-    return <span className="text-sm">{percent === null ? 'Hazırlanıyor…' : `%${percent}`}</span>
-  }
+  const processing = isProcessing(transcription.status, meeting.id)
+  const waiting = !processing
+  const percent = processing ? (active?.percent ?? null) : null
 
   return (
     <div className="flex flex-col gap-3">

@@ -1,13 +1,12 @@
-import { ArrowLeftIcon } from 'lucide-react'
 import { Badge } from '@renderer/components/ui/badge'
-import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { ApprovedTranscript } from '../correction/approved-transcript'
 import { ApproveSection } from '../correction/approve-section'
 import { TranscriptView } from '../correction/transcript-view'
 import { useTranscript } from '../correction/use-transcript'
 import { RecordingControls } from '../recording/recording-controls'
-import { useRecorder } from '../recording/use-recorder'
+import { isBusyWith } from '../recording/recorder-controller'
+import type { Recorder } from '../recording/use-recorder'
 import { formatMeetingDate } from './format-date'
 import { LANGUAGE_LABELS, STATE_LABELS } from './labels'
 import { MeetingActions } from './meeting-actions'
@@ -18,30 +17,34 @@ import type { MeetingsApi } from './use-meetings'
 interface Props {
   api: MeetingsApi
   transcription: TranscriptionApi
+  recorder: Recorder
   meetingId: string
-  onBack: () => void
+  /** Silme onaylandı; çağıran önce Recording'i bitirir, sonra siler ve ekrandan çıkar. */
+  onRemove: (id: string) => Promise<void>
 }
 
-export function MeetingDetail({ api, transcription, meetingId, onBack }: Props): React.JSX.Element {
+export function MeetingDetail({
+  api,
+  transcription,
+  recorder,
+  meetingId,
+  onRemove
+}: Props): React.JSX.Element {
   const meeting = api.meetings.find((candidate) => candidate.id === meetingId)
-  const recorder = useRecorder(meetingId, api.refresh)
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Button variant="neutral" size="sm" onClick={onBack}>
-          <ArrowLeftIcon /> Meeting&apos;ler
-        </Button>
-      </div>
-
       {!meeting ? (
-        <p>{api.loaded ? 'Bu Meeting artık yok.' : 'Yükleniyor…'}</p>
+        // Meeting yoksa (silinmiş/hiç olmamış) sayfa Home'a yönlendirir; burada yalnızca ilk yükleme beklenir.
+        <p>Yükleniyor…</p>
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-col gap-1">
               <h2 className="text-xl font-heading">{formatMeetingDate(meeting.createdAt)}</h2>
-              <span className="text-sm">{LANGUAGE_LABELS[meeting.language]}</span>
+              <span className="text-sm">
+                {LANGUAGE_LABELS[meeting.language]} · {meeting.recordingCount} kayıt
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <Badge>{STATE_LABELS[meeting.state]}</Badge>
@@ -49,10 +52,8 @@ export function MeetingDetail({ api, transcription, meetingId, onBack }: Props):
                 meeting={meeting}
                 onClose={api.close}
                 onTranscribe={transcription.transcribe}
-                closeDisabled={recorder.state !== 'idle'}
-                onRemove={async (id) => {
-                  if (await api.remove(id)) onBack()
-                }}
+                closeDisabled={isBusyWith(recorder, meetingId)}
+                onRemove={(id) => void onRemove(id)}
               />
             </div>
           </div>
@@ -71,12 +72,10 @@ export function MeetingDetail({ api, transcription, meetingId, onBack }: Props):
               <CardTitle>Kayıtlar</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <p>
-                {meeting.recordingCount === 0
-                  ? 'Bu Meeting’de henüz kayıt yok.'
-                  : `${meeting.recordingCount} kayıt`}
-              </p>
-              {meeting.state === 'recording' && <RecordingControls recorder={recorder} />}
+              {meeting.recordingCount === 0 && <p>Bu Meeting’de henüz kayıt yok.</p>}
+              {meeting.state === 'recording' && (
+                <RecordingControls recorder={recorder} meetingId={meeting.id} />
+              )}
             </CardContent>
           </Card>
         </>

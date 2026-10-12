@@ -35,10 +35,16 @@ let transcriptions: TranscriptionQueue | undefined
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1100,
+    height: 720,
+    minWidth: 760,
+    minHeight: 520,
     show: false,
     autoHideMenuBar: true,
+    // macOS: trafik ışıkları sidebar'ın üstüne oturur; diğer platformlarda normal başlık çubuğu.
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 14 } }
+      : {}),
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

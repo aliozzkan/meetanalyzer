@@ -21,8 +21,22 @@ Sonraki dilimler bu kabuğun üzerine biner. Bu dilim bittiğinde uygulama yeni 
 
 - [ ] Kayıt sürerken sidebar'dan başka bir Meeting'e/Home'a geçmek kaydı durdurmaz; geri dönünce süre ve seviye göstergesi akmaya devam eder.
 - [ ] Kayıt sürerken Meeting silinirse kayıt düzgünce biter ve Home'a dönülür.
-- [ ] Uygulamayı yenilemek açık Meeting'i `#/meetings/:id`'den geri getirir; ⌘[ / ⌘] çalışır.
-- [ ] Gruplama sınırları (gece yarısı, 7/30 gün, ay) birim testiyle doğrulanır.
-- [ ] 760 px genişlikte sidebar ikon moduna iner, içerik taşmaz; yeniden başlatınca ⌘B ile seçilen durum korunur.
+- [x] Uygulamayı yenilemek açık Meeting'i `#/meetings/:id`'den geri getirir; ⌘[ / ⌘] çalışır.
+- [x] Gruplama sınırları (gece yarısı, 7/30 gün, ay) birim testiyle doğrulanır.
+- [x] 760 px genişlikte sidebar ikon moduna iner, içerik taşmaz; yeniden başlatınca ⌘B ile seçilen durum korunur.
 - [ ] macOS'ta trafik ışıkları sidebar üstünde, pencere sürüklenebilir.
 - [ ] Mevcut Transcription/Correction/Approve akışları değişmeden çalışır.
+
+## Comments
+
+**2026-10-12 (implementasyon + review sonrası):**
+
+- **Doğrulama sınırı:** Arayüz, geçici bir `window.api` stub'ıyla tarayıcı pane'inde denendi (rotalar, yenileme, gruplama, daralma, silme, izin uyarısı); gerçek Electron penceresinde, gerçek mikrofonla ve macOS trafik ışıklarıyla **denenmedi**. İşaretlenmeyen kriterler bu yüzden açık: Recording sürerken gezinme/silme (controller testleri mantığı kapsıyor, uçtan uca değil), trafik ışıkları + sürükleme alanı, mevcut Transcription/Correction/Approve akışı. `trafficLightPosition` (x:16) ikon modundaki 48 px sidebar'dan geniş; ışıklar içerik şeridine taşabilir, gözle kontrol gerekir.
+- **760 px:** shadcn sidebar'ı Tailwind `md:` (768 px) kırılımıyla gizliyordu; minimum pencere 760 olduğundan sidebar kaybolacaktı. `sidebar.tsx`'ten `md:` kırılımı ve off-canvas (mobile) kipi çıkarıldı.
+- **Satırın sağındaki metin:** spec "soluk saat" diyordu; saat zaten satır adında ("14:30 Meeting'i") olduğu için sağda kısa tarih ("12 Eki") gösteriliyor.
+- **Router:** `react-router` (`createHashRouter`, layout rotası + `Outlet context`) kullanıldı. Recorder, Meeting listesi, model ve Transcription durumu layout rotasında yaşar.
+- **Recorder:** mantık `recorder-controller.ts`'e (React'siz, test edilebilir) taşındı; `useRecorder` ince bir sarmalayıcı. `stop`/`stopQuietly` Recording tamamen bitene (ya da başlatma iptal edilene) kadar bekler, böylece Meeting silme kayıt bitmeden çalışmaz. İzin uyarısı `microphoneDeniedFor` ile ilgili Meeting'e bağlıdır.
+- **Kısayollar:** ⌘[ / ⌘] Türkçe Q klavyede Option gerektirdiği için `alt` kısıtı yok; karakter ya da fiziksel tuş (`BracketLeft/Right`) eşleşmesi yeter.
+- **Sidebar tercihi:** ⌘B seçimi her genişlikte `localStorage`'a yazılır; dar pencerede otomatik daralma kalıcı değildir.
+- **Geçici Home:** "Meetanalyzing" başlığı + Yeni Meeting (dil select'iyle) + ModelCard. Sidebar başlığındaki "Meetanalyzing" bağlantısı Home'a dönüş yolu olarak bırakıldı (üst alanın geri kalanı issue 03).
+- **Kapsam dışı bırakılanlar (review):** `format-date` ile tarih biçimlendirmesinin tek yerde toplanması, `app/` ↔ `features/` arası çift yönlü import, `IS_MAC`'in preload'dan gelmesi.
