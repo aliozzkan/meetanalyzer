@@ -39,6 +39,9 @@ export const TRANSCRIPTION_MODEL = {
 
 export const TRANSCRIPTION_MODEL_URL = `https://huggingface.co/${TRANSCRIPTION_MODEL.repo}/resolve/${TRANSCRIPTION_MODEL.revision}/${TRANSCRIPTION_MODEL.fileName}`
 
+// docs/tuning.md → İlerleme sıklığı: model indirme ve Transcription ilerlemesi arayüze en fazla bu aralıkla iletilir.
+export const PROGRESS_BROADCAST_INTERVAL_MS = 250
+
 // docs/tuning.md → Model indirme öncesi boş alan
 export const MODEL_DOWNLOAD_MIN_FREE_BYTES = 1024 ** 3
 

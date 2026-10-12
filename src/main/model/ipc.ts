@@ -1,8 +1,7 @@
 import { BrowserWindow, ipcMain } from 'electron'
+import { PROGRESS_BROADCAST_INTERVAL_MS } from '../config'
 import type { ModelState } from '../../shared/model'
 import type { ModelService } from './model-service'
-
-const PROGRESS_INTERVAL_MS = 250
 
 // Durum değişikliklerini tüm pencerelere iletir; sık gelen ilerleme güncellemeleri seyreltilir.
 export function createStateBroadcaster(): (state: ModelState) => void {
@@ -10,7 +9,7 @@ export function createStateBroadcaster(): (state: ModelState) => void {
   return (state) => {
     if (state.status === 'downloading') {
       const now = Date.now()
-      if (now - lastProgressAt < PROGRESS_INTERVAL_MS) return
+      if (now - lastProgressAt < PROGRESS_BROADCAST_INTERVAL_MS) return
       lastProgressAt = now
     }
     for (const window of BrowserWindow.getAllWindows())

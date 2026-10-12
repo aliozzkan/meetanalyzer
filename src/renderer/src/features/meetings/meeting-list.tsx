@@ -8,7 +8,7 @@ import { NativeSelect, NativeSelectOption } from '@renderer/components/ui/native
 import { formatMeetingDate } from './format-date'
 import { LANGUAGE_LABELS, STATE_LABELS } from './labels'
 import { MeetingActions } from './meeting-actions'
-import { TranscriptionStatus } from '../transcription/transcription-status'
+import { MeetingTranscriptionStatus } from '../transcription/transcription-status'
 import type { TranscriptionApi } from '../transcription/use-transcription'
 import type { MeetingsApi } from './use-meetings'
 
@@ -76,7 +76,11 @@ export function MeetingList({ api, transcription, onOpen }: Props): React.JSX.El
                   </span>
                 </button>
                 <div className="flex items-center gap-3">
-                  <TranscriptionStatus meeting={meeting} transcription={transcription} compact />
+                  <MeetingTranscriptionStatus
+                    meeting={meeting}
+                    transcription={transcription}
+                    compact
+                  />
                   <Badge>{STATE_LABELS[meeting.state]}</Badge>
                   <MeetingActions
                     meeting={meeting}

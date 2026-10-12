@@ -7,7 +7,7 @@ import { useRecorder } from '../recording/use-recorder'
 import { formatMeetingDate } from './format-date'
 import { LANGUAGE_LABELS, STATE_LABELS } from './labels'
 import { MeetingActions } from './meeting-actions'
-import { TranscriptionStatus } from '../transcription/transcription-status'
+import { MeetingTranscriptionStatus } from '../transcription/transcription-status'
 import type { TranscriptionApi } from '../transcription/use-transcription'
 import type { MeetingsApi } from './use-meetings'
 
@@ -54,7 +54,7 @@ export function MeetingDetail({ api, transcription, meetingId, onBack }: Props):
             </div>
           </div>
 
-          <TranscriptionStatus meeting={meeting} transcription={transcription} />
+          <MeetingTranscriptionStatus meeting={meeting} transcription={transcription} />
 
           <Card>
             <CardHeader>

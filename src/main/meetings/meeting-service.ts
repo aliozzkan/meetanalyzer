@@ -177,6 +177,7 @@ export function createMeetingService({
     // Yazıcı, dosyalar ve satırlar silinmeden önce kapatılır; aksi halde silinen klasöre yazmaya devam eder.
     activeRecordings.abortMeeting(id)
     // Aynı şekilde çalışan whisper iptal edilir ve Meeting kuyruktan çıkar.
+    // (Ölmekte olan whisper silinen WAV'ı açık tutsa da sorun değil; sonucu iptal yüzünden yazılmaz.)
     activeTranscriptions.cancelMeeting(id)
     db.prepare('DELETE FROM meetings WHERE id = ?').run(id)
     rmSync(join(recordingsDir, id), { recursive: true, force: true })

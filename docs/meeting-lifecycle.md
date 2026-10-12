@@ -14,17 +14,17 @@ Recording ──► Closed ──► Transcribing ──► Transcribed ──�
                                                                   Send Failed / Analysis Errored ──┘
 ```
 
-| Durum | Anlamı | Kullanıcının yapabildiği |
-| --- | --- | --- |
-| **Recording** | Meeting açık, Recording alınıyor ya da yeni Recording eklenebilir. | Recording başlat/durdur, Meeting'i kapat, Meeting'i sil |
-| **Closed** | Toplantı bitti, yeni Recording eklenemez. Transcription henüz başlatılmadı. | Transcription'ı başlat, Meeting'i sil |
-| **Transcribing** | Meeting Transcription Queue'da; sırada bekliyor ("Sırada") ya da işleniyor. | Bekle, Meeting'i sil |
-| **Transcribed** | Transcript hazır. | Suspect Word'lere Correction yap, Transcript'i onayla, Meeting'i sil |
-| **Approved** | Transcript onaylandı (Approved Transcript), artık değişmez. | Analiz düğmesine bas |
-| **Awaiting Analysis** | Analysis Request gönderildi, Analysis tamamlanmadı. | Bekle |
-| **Completed** | Analysis başarıyla tamamlandı. | Analysis'i görüntüle |
-| **Send Failed** | Analysis Request backend'e ulaşmadı. | Retry Analysis |
-| **Analysis Errored** | Request ulaştı ama analiz sırasında hata oluştu. | Retry Analysis |
+| Durum                 | Anlamı                                                                      | Kullanıcının yapabildiği                                             |
+| --------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Recording**         | Meeting açık, Recording alınıyor ya da yeni Recording eklenebilir.          | Recording başlat/durdur, Meeting'i kapat, Meeting'i sil              |
+| **Closed**            | Toplantı bitti, yeni Recording eklenemez. Transcription henüz başlatılmadı. | Transcription'ı başlat, Meeting'i sil                                |
+| **Transcribing**      | Meeting Transcription Queue'da; sırada bekliyor ("Sırada") ya da işleniyor. | Bekle, Meeting'i sil (işleniyorsa çalışan whisper iptal edilir)      |
+| **Transcribed**       | Transcript hazır.                                                           | Suspect Word'lere Correction yap, Transcript'i onayla, Meeting'i sil |
+| **Approved**          | Transcript onaylandı (Approved Transcript), artık değişmez.                 | Analiz düğmesine bas                                                 |
+| **Awaiting Analysis** | Analysis Request gönderildi, Analysis tamamlanmadı.                         | Bekle                                                                |
+| **Completed**         | Analysis başarıyla tamamlandı.                                              | Analysis'i görüntüle                                                 |
+| **Send Failed**       | Analysis Request backend'e ulaşmadı.                                        | Retry Analysis                                                       |
+| **Analysis Errored**  | Request ulaştı ama analiz sırasında hata oluştu.                            | Retry Analysis                                                       |
 
 ## Geçiş kuralları
 
@@ -32,7 +32,7 @@ Recording ──► Closed ──► Transcribing ──► Transcribed ──�
 - **Recording → Closed:** Kullanıcı toplantı bittiğinde Meeting'i kapatır. Dönüş yoktur. Hiç Recording'i olmayan Meeting kapatılamaz; silinir.
 - **Closed → Transcribing:** Kullanıcı Transcription'ı elle başlatır; Meeting Transcription Queue'ya girer. Transcription toplantı sırasında kendiliğinden başlamaz, ama kullanıcı başlattıysa yeni bir Meeting'in Recording'i sürerken de arka planda devam eder.
 - **Transcribing → Transcribed:** Meeting'in tüm Recording'leri transcribe edildi.
-- **Transcribing → Closed:** Transcription hata verirse ya da uygulama Transcription sürerken kapanırsa. Tamamlanmış Recording'lerin transcript'leri korunur; yeniden başlatıldığında yalnızca kalanlar işlenir.
+- **Transcribing → Closed:** Transcription hata verirse ya da uygulama Transcription sürerken kapanırsa. Hata durumunda hata mesajı Meeting'in `last_error` alanına yazılır ve Closed'da gösterilir; yeniden Transcribing'e girerken silinir. Tamamlanmış Recording'lerin transcript'leri korunur; yeniden başlatıldığında yalnızca kalanlar işlenir.
 - **Transcribed → Approved:** Kullanıcı Transcript'i onaylar. Her Suspect Word'ün tek tek işaretlenmesi gerekmez; düzeltilmemiş Suspect Word varsa sayısıyla birlikte onay sorulur. Onay geri alınamaz; Approved Transcript dondurulur ve Recording sesleri silinir.
 - **Silme:** Approved'dan önceki her durumda Meeting silinebilir; sesleri ve verisi tamamen kaldırılır. Approved ve sonrasında silme şimdilik yoktur.
 - **Çökme:** Recording sırasında uygulama çökerse açılışta yarım kalan Recording son yazılan parçada bitmiş sayılır (WAV header'ı onarılır, süre ve bitiş zamanı yazılır; en fazla son ~5 sn kaybolur); hiç ses içermeyen Recording silinir. Meeting Recording durumunda kalır.

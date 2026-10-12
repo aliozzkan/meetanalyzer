@@ -324,6 +324,48 @@ describe('Transcription Queue', () => {
   })
 })
 
+describe('Transcription Queue hata yolları', () => {
+  it('zaten metne dökülmüş Recording hata sayılmaz; kalanlar işlenir', async () => {
+    const { queue, meetings, addMeeting, finishNext, failNext } = setup()
+    const id = addMeeting(2)
+    queue.enqueue(id)
+
+    await failNext(new TranscriptionError('already-transcribed', 'zaten'))
+    await finishNext()
+
+    expect(meetings.get(id)).toMatchObject({ state: 'transcribed', lastError: null })
+  })
+
+  it('durum yazılamazsa kuyruk takılmaz ve Meeting Closed olur', async () => {
+    const { queue, meetings, db, addMeeting, finishNext } = setup()
+    const first = addMeeting(1)
+    const second = addMeeting(1)
+    db.prepare(
+      `CREATE TRIGGER block_transcribed BEFORE UPDATE ON meetings
+       WHEN NEW.state = 'transcribed' BEGIN SELECT RAISE(ABORT, 'disk dolu'); END`
+    ).run()
+    queue.enqueue(first)
+    queue.enqueue(second)
+
+    await finishNext()
+
+    expect(meetings.get(first).state).toBe('closed')
+    expect(meetings.get(first).lastError).toBeTruthy()
+    expect(queue.getStatus().active?.meetingId).toBe(second)
+  })
+
+  it('silinen işlenen Meeting hemen durumdan düşer', async () => {
+    const { queue, addMeeting } = setup()
+    const id = addMeeting(1)
+    queue.enqueue(id)
+    await new Promise((resolve) => setImmediate(resolve))
+
+    queue.cancelMeeting(id)
+
+    expect(queue.getStatus()).toEqual({ active: null, queued: [] })
+  })
+})
+
 describe('recoverInterruptedTranscriptions', () => {
   it("Transcribing Meeting'leri Closed'a döndürür, diğerlerine dokunmaz", () => {
     const { db, meetings, addMeeting } = setup()

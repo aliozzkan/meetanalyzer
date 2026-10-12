@@ -166,16 +166,23 @@ export function createTranscriptionQueue({
 
       let done = 0
       for (const [index, recording] of recordings.entries()) {
-        await transcribe({
-          recordingId: recording.id,
-          language,
-          signal: job.controller.signal,
-          onProgress: (percent) => {
-            if (job.stopped) return
-            job.percent = Math.round(((done + (weights[index] * percent) / 100) / total) * 100)
-            notify()
+        try {
+          await transcribe({
+            recordingId: recording.id,
+            language,
+            signal: job.controller.signal,
+            onProgress: (percent) => {
+              if (job.stopped) return
+              job.percent = Math.round(((done + (weights[index] * percent) / 100) / total) * 100)
+              notify()
+            }
+          })
+        } catch (error) {
+          // Zaten metne dökülmüş Recording hata değildir (başka yoldan bitmiş); kalanlara geçilir.
+          if (!(error instanceof TranscriptionError && error.code === 'already-transcribed')) {
+            throw error
           }
-        })
+        }
         done += weights[index]
         job.percent = Math.round((done / total) * 100)
         notify()
@@ -191,6 +198,8 @@ export function createTranscriptionQueue({
   }
 
   // Kuyruk satırını siler ve durumu tek işlemde geçirir; Meeting o arada silinmişse sessizce geçilir.
+  // Yazma başarısız olursa kuyruk satırı yine de silinir (aksi halde işçi aynı Meeting'de sonsuza dek döner)
+  // ve Meeting elinden geldiğince Closed'a çekilir; o da olmazsa açılıştaki toparlama düzeltir.
   function finish(meetingId: string, to: 'transcribed' | 'closed', lastError?: string): void {
     try {
       db.transaction(() => {
@@ -199,6 +208,14 @@ export function createTranscriptionQueue({
       })()
     } catch (error) {
       console.error('Transcription sonucu yazılamadı:', error)
+      try {
+        db.prepare('DELETE FROM transcription_queue WHERE meeting_id = ?').run(meetingId)
+        db.prepare(
+          "UPDATE meetings SET state = 'closed', last_error = ? WHERE id = ? AND state = 'transcribing'"
+        ).run(lastError ?? UNEXPECTED_ERROR, meetingId)
+      } catch (fallbackError) {
+        console.error('Transcription durumu geri alınamadı:', fallbackError)
+      }
     }
   }
 

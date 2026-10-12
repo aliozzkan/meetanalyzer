@@ -12,7 +12,7 @@ interface Props {
 }
 
 // Transcribing: "Sırada" ya da işleniyor + yüzde; Closed: son Transcription hatası.
-export function TranscriptionStatus({
+export function MeetingTranscriptionStatus({
   meeting,
   transcription,
   compact = false
@@ -20,7 +20,7 @@ export function TranscriptionStatus({
   const { active, queued } = transcription.status
 
   if (meeting.state === 'closed' && meeting.lastError) {
-    if (compact) return <span className="text-sm">Son deneme başarısız oldu</span>
+    if (compact) return <span className="text-sm text-destructive">{meeting.lastError}</span>
     return (
       <Alert variant="destructive">
         <TriangleAlertIcon />

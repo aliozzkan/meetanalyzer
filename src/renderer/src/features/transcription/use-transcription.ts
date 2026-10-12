@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import type { TranscriptionStatus } from '@shared/transcription'
+import { statusShape, type TranscriptionStatus } from '@shared/transcription'
 import type { ModelApi } from '../model/use-model'
 
 export interface TranscriptionApi {
@@ -28,7 +28,7 @@ export function useTranscription(
   const apply = useCallback(
     (next: TranscriptionStatus) => {
       setStatus(next)
-      const shape = JSON.stringify([next.active?.meetingId ?? null, next.queued])
+      const shape = statusShape(next)
       if (shape !== lastShape.current) {
         lastShape.current = shape
         void onMeetingsChanged()
