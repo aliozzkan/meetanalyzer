@@ -3,7 +3,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { openDatabase, type Db } from '../db/database'
-import { createMeetingService, type ActiveRecordings, type MeetingService } from './meeting-service'
+import {
+  createMeetingService,
+  type ActiveRecordings,
+  type ActiveTranscriptions,
+  type MeetingService
+} from './meeting-service'
 
 // Her çağrıda ilerleyen sahte saat: zaman damgası testleri milisaniye şansına kalmasın.
 const tempDirs: string[] = []
@@ -11,7 +16,10 @@ afterEach(() => {
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-function setup(activeRecordings?: ActiveRecordings): {
+function setup(
+  activeRecordings?: ActiveRecordings,
+  activeTranscriptions?: ActiveTranscriptions
+): {
   meetings: MeetingService
   db: Db
   recordingsDir: string
@@ -25,6 +33,7 @@ function setup(activeRecordings?: ActiveRecordings): {
     db,
     recordingsDir,
     activeRecordings,
+    activeTranscriptions,
     now: () => time
   })
   return { meetings, db, recordingsDir, tick: () => (time += 1_000) }
@@ -235,5 +244,29 @@ describe('Meeting servisi', () => {
 
     expect(seenWhileAborting).toEqual([meeting.id])
     expect(() => meetings.get(meeting.id)).toThrow(expect.objectContaining({ code: 'not-found' }))
+  })
+
+  it('Transcribing → Closed geçişi hata mesajını yazar; yeniden Transcribing önceki hatayı siler', () => {
+    const { meetings, db } = setup()
+    const meeting = meetings.start('tr')
+    addRecording(db, meeting.id)
+    meetings.close(meeting.id)
+    meetings.transition(meeting.id, 'transcribing')
+
+    const failed = meetings.transition(meeting.id, 'closed', 'whisper çöktü')
+    expect(failed.lastError).toBe('whisper çöktü')
+
+    expect(meetings.transition(meeting.id, 'transcribing').lastError).toBeNull()
+    expect(meetings.transition(meeting.id, 'closed').lastError).toBeNull()
+  })
+
+  it('Meeting silinmeden önce Transcription iptal edilir', () => {
+    const cancelled: string[] = []
+    const { meetings } = setup(undefined, { cancelMeeting: (id) => cancelled.push(id) })
+    const meeting = meetings.start('tr')
+
+    meetings.remove(meeting.id)
+
+    expect(cancelled).toEqual([meeting.id])
   })
 })

@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: 02, 05, 07, 08
 
 # Transcription Queue ve Closed → Transcribing → Transcribed
@@ -18,11 +18,11 @@ Spec: [../spec.md](../spec.md) → "4. Transcription", "Çökme ve kapanma sonra
 
 ## Kabul kriterleri
 
-- [ ] İki Meeting için Transcribe'a basılınca ikincisi "Sırada" görünür ve birincisi bitince başlar.
-- [ ] Transcription sürerken yeni Meeting'de Recording alınabilir; kayıtta kesinti olmaz.
-- [ ] Transcription sırasında uygulama kapatılıp açılınca Meeting Closed'dadır; yeniden başlatmada yalnızca kalan Recording'ler işlenir.
-- [ ] Kuyruk çalışırken `pmset -g assertions` assertion'ı gösterir.
-- [ ] Kuyruk mantığı için (runner mock'lanarak) birim testleri var.
+- [x] İki Meeting için Transcribe'a basılınca ikincisi "Sırada" görünür ve birincisi bitince başlar.
+- [x] Transcription sürerken yeni Meeting'de Recording alınabilir; kayıtta kesinti olmaz.
+- [x] Transcription sırasında uygulama kapatılıp açılınca Meeting Closed'dadır; yeniden başlatmada yalnızca kalan Recording'ler işlenir.
+- [x] Kuyruk çalışırken `pmset -g assertions` assertion'ı gösterir.
+- [x] Kuyruk mantığı için (runner mock'lanarak) birim testleri var.
 
 ## Comments
 

@@ -8,14 +8,17 @@ import { NativeSelect, NativeSelectOption } from '@renderer/components/ui/native
 import { formatMeetingDate } from './format-date'
 import { LANGUAGE_LABELS, STATE_LABELS } from './labels'
 import { MeetingActions } from './meeting-actions'
+import { TranscriptionStatus } from '../transcription/transcription-status'
+import type { TranscriptionApi } from '../transcription/use-transcription'
 import type { MeetingsApi } from './use-meetings'
 
 interface Props {
   api: MeetingsApi
+  transcription: TranscriptionApi
   onOpen: (id: string) => void
 }
 
-export function MeetingList({ api, onOpen }: Props): React.JSX.Element {
+export function MeetingList({ api, transcription, onOpen }: Props): React.JSX.Element {
   const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE)
   const hasOpenMeeting = api.meetings.some((meeting) => meeting.state === 'recording')
 
@@ -73,8 +76,14 @@ export function MeetingList({ api, onOpen }: Props): React.JSX.Element {
                   </span>
                 </button>
                 <div className="flex items-center gap-3">
+                  <TranscriptionStatus meeting={meeting} transcription={transcription} compact />
                   <Badge>{STATE_LABELS[meeting.state]}</Badge>
-                  <MeetingActions meeting={meeting} onClose={api.close} onRemove={api.remove} />
+                  <MeetingActions
+                    meeting={meeting}
+                    onClose={api.close}
+                    onRemove={api.remove}
+                    onTranscribe={transcription.transcribe}
+                  />
                 </div>
               </CardContent>
             </Card>

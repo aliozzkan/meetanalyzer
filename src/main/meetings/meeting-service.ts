@@ -61,10 +61,19 @@ export interface ActiveRecordings {
 
 const NO_ACTIVE_RECORDINGS: ActiveRecordings = { hasActive: () => false, abortMeeting: () => {} }
 
+// Meeting servisinin Transcription Queue'dan bilmesi gereken tek şey (bkz. src/main/transcription).
+export interface ActiveTranscriptions {
+  /** Meeting'i kuyruktan çıkarır; işleniyorsa çalışan whisper'ı iptal eder. */
+  cancelMeeting: (meetingId: string) => void
+}
+
+const NO_ACTIVE_TRANSCRIPTIONS: ActiveTranscriptions = { cancelMeeting: () => {} }
+
 export interface MeetingServiceOptions {
   db: Db
   recordingsDir: string
   activeRecordings?: ActiveRecordings
+  activeTranscriptions?: ActiveTranscriptions
   now?: () => number
 }
 
@@ -72,7 +81,8 @@ export interface MeetingService {
   start: (language: Language) => MeetingSummary
   get: (id: string) => MeetingSummary
   list: () => MeetingSummary[]
-  transition: (id: string, to: MeetingState) => MeetingSummary
+  /** `lastError` yalnızca Transcribing → Closed geçişinde yazılır; Transcribing'e girerken önceki hata silinir. */
+  transition: (id: string, to: MeetingState, lastError?: string) => MeetingSummary
   close: (id: string) => MeetingSummary
   remove: (id: string) => void
 }
@@ -81,6 +91,7 @@ export function createMeetingService({
   db,
   recordingsDir,
   activeRecordings = NO_ACTIVE_RECORDINGS,
+  activeTranscriptions = NO_ACTIVE_TRANSCRIPTIONS,
   now = Date.now
 }: MeetingServiceOptions): MeetingService {
   function get(id: string): MeetingSummary {
@@ -114,7 +125,7 @@ export function createMeetingService({
     return get(id)
   }
 
-  function transition(id: string, to: MeetingState): MeetingSummary {
+  function transition(id: string, to: MeetingState, lastError?: string): MeetingSummary {
     const meeting = get(id)
     if (!ALLOWED_TRANSITIONS[meeting.state].includes(to)) {
       throw new MeetingError(
@@ -131,10 +142,14 @@ export function createMeetingService({
     const at = now()
     db.prepare(
       `UPDATE meetings SET state = ?,
+         last_error = CASE
+           WHEN ? = 'transcribing' THEN NULL
+           WHEN ? = 'closed' AND state = 'transcribing' THEN ?
+           ELSE last_error END,
          closed_at = CASE WHEN ? = 'closed' AND state = 'recording' THEN ? ELSE closed_at END,
          approved_at = CASE WHEN ? = 'approved' THEN ? ELSE approved_at END
        WHERE id = ?`
-    ).run(to, to, at, to, at, id)
+    ).run(to, to, to, lastError ?? null, to, at, to, at, id)
     return get(id)
   }
 
@@ -161,6 +176,8 @@ export function createMeetingService({
     }
     // Yazıcı, dosyalar ve satırlar silinmeden önce kapatılır; aksi halde silinen klasöre yazmaya devam eder.
     activeRecordings.abortMeeting(id)
+    // Aynı şekilde çalışan whisper iptal edilir ve Meeting kuyruktan çıkar.
+    activeTranscriptions.cancelMeeting(id)
     db.prepare('DELETE FROM meetings WHERE id = ?').run(id)
     rmSync(join(recordingsDir, id), { recursive: true, force: true })
   }

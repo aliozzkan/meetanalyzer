@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { Language, MeetingResult, MeetingSummary } from '../shared/meeting'
 import type { ModelState } from '../shared/model'
+import type { TranscriptionStatus } from '../shared/transcription'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
 
 // Custom APIs for renderer
@@ -25,6 +26,17 @@ const api = {
       ipcRenderer.invoke('recordings:discard', recordingId),
     openMicrophoneSettings: (): Promise<void> =>
       ipcRenderer.invoke('recordings:open-microphone-settings')
+  },
+  transcription: {
+    enqueue: (meetingId: string): Promise<MeetingResult<MeetingSummary>> =>
+      ipcRenderer.invoke('transcription:enqueue', meetingId),
+    getStatus: (): Promise<TranscriptionStatus> => ipcRenderer.invoke('transcription:get-status'),
+    onStatus: (callback: (status: TranscriptionStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: TranscriptionStatus): void =>
+        callback(status)
+      ipcRenderer.on('transcription:status', listener)
+      return () => ipcRenderer.removeListener('transcription:status', listener)
+    }
   },
   model: {
     getState: (): Promise<ModelState> => ipcRenderer.invoke('model:get-state'),

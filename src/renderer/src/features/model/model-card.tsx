@@ -25,7 +25,15 @@ function megabytes(bytes: number): string {
 
 // Transcription modelinin durumu: ilk açılışta indirme sorusu, indirme sürerken ilerleme, hatada yeniden deneme.
 // Hazırsa (ya da soru atlanmışsa) hiçbir şey göstermez.
-export function ModelCard({ model }: { model: ModelApi }): React.JSX.Element | null {
+interface Props {
+  model: ModelApi
+  /** Transcribe model yokken basıldı: "Şimdilik atla" bayrağı yok sayılır ve soru yeniden gösterilir. */
+  forceAsk?: boolean
+  /** Soru bu sefer de atlandı. */
+  onSkip?: () => void
+}
+
+export function ModelCard({ model, forceAsk = false, onSkip }: Props): React.JSX.Element | null {
   const [dismissed, setDismissed] = useState(readDismissed)
   const { state } = model
 
@@ -77,7 +85,7 @@ export function ModelCard({ model }: { model: ModelApi }): React.JSX.Element | n
   }
 
   // missing
-  if (dismissed) return null
+  if (dismissed && !forceAsk) return null
   return (
     <Card>
       <CardHeader>
@@ -110,6 +118,7 @@ export function ModelCard({ model }: { model: ModelApi }): React.JSX.Element | n
                 // kalıcı saklanamazsa yalnızca bu oturum için atlanır
               }
               setDismissed(true)
+              onSkip?.()
             }}
           >
             Şimdilik atla

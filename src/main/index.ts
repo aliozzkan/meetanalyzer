@@ -4,9 +4,20 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { openDatabase, type Db } from './db/database'
 import { registerMeetingIpc } from './meetings/ipc'
-import { createAppModelService } from './model/app-model'
+import { createAppModelService, getModelPath } from './model/app-model'
 import { createStateBroadcaster, registerModelIpc } from './model/ipc'
 import { createMeetingService } from './meetings/meeting-service'
+import { getWhisperPaths } from './whisper/paths'
+import { SUSPECT_WORD_THRESHOLD, WHISPER_NICE } from './config'
+import { performanceCoreCount } from './transcription/cpu'
+import { transcribeRecording } from './transcription/transcribe-recording'
+import { createStatusBroadcaster, registerTranscriptionIpc } from './transcription/ipc'
+import {
+  createTranscriptionQueue,
+  recoverInterruptedTranscriptions,
+  type TranscriptionQueue
+} from './transcription/transcription-queue'
+import { whisperThreads } from './transcription/whisper-args'
 import { createPowerGuard } from './power/power-guard'
 import { requestMicrophoneAccess } from './recordings/microphone'
 import { recoverInterruptedRecordings } from './recordings/recovery'
@@ -15,6 +26,7 @@ import { createRecordingService, type RecordingService } from './recordings/reco
 
 let db: Db | undefined
 let recordings: RecordingService | undefined
+let transcriptions: TranscriptionQueue | undefined
 
 function createWindow(): void {
   // Create the browser window.
@@ -71,6 +83,7 @@ app.whenReady().then(() => {
     return
   }
 
+  const database = db
   const recordingsDir = join(app.getPath('userData'), 'recordings')
 
   // Önceki oturum kayıt sırasında çöktüyse yarım kalan Recording'ler IPC açılmadan önce toparlanır.
@@ -86,19 +99,63 @@ app.whenReady().then(() => {
     console.error('Yarım kalan kayıtlar toparlanamadı:', error)
   }
 
+  // Transcription sırasında kapanan Meeting'ler Closed'a döner; kuyruk temizlenir.
+  try {
+    const recovered = recoverInterruptedTranscriptions(db)
+    if (recovered > 0)
+      console.log(`Yarım kalan Transcription: ${recovered} Meeting Closed'a döndü.`)
+  } catch (error) {
+    console.error('Yarım kalan Transcription toparlanamadı:', error)
+  }
+
   // Uyku engeli sebepleri (kayıt, ileride transcription) tek bir güç modülünde toplanır.
   const power = createPowerGuard(powerSaveBlocker)
   recordings = createRecordingService({ db, recordingsDir, requestMicrophoneAccess, power })
-  registerMeetingIpc(createMeetingService({ db, recordingsDir, activeRecordings: recordings }))
-  registerRecordingIpc(recordings)
 
   // Transcription modeli: indirme yalnızca kullanıcı isteğiyle başlar (otomatik indirme yok).
-  registerModelIpc(
-    createAppModelService({
-      modelsDir: join(app.getPath('userData'), 'models'),
-      onState: createStateBroadcaster()
-    })
-  )
+  const modelsDir = join(app.getPath('userData'), 'models')
+  const model = createAppModelService({ modelsDir, onState: createStateBroadcaster() })
+  registerModelIpc(model)
+
+  const whisperPaths = getWhisperPaths({
+    isPackaged: app.isPackaged,
+    appPath: app.getAppPath(),
+    resourcesPath: process.resourcesPath
+  })
+  const meetings = createMeetingService({
+    db,
+    recordingsDir,
+    activeRecordings: recordings,
+    // Kuyruk Meeting servisine, Meeting servisi kuyruğa bağlıdır; döngü bu sarmalayıcıyla kırılır.
+    activeTranscriptions: { cancelMeeting: (id) => transcriptions?.cancelMeeting(id) }
+  })
+  transcriptions = createTranscriptionQueue({
+    db,
+    meetings,
+    power,
+    isModelReady: () => model.getState().status === 'ready',
+    onStatus: createStatusBroadcaster(),
+    transcribe: ({ recordingId, language, onProgress, signal }) =>
+      transcribeRecording({
+        db: database,
+        recordingsDir,
+        recordingId,
+        language,
+        suspectThreshold: SUSPECT_WORD_THRESHOLD,
+        whisper: {
+          cliPath: whisperPaths.cli,
+          modelPath: getModelPath(modelsDir),
+          vadModelPath: whisperPaths.vadModel,
+          threads: whisperThreads(performanceCoreCount()),
+          nice: WHISPER_NICE
+        },
+        onProgress,
+        signal
+      })
+  })
+  registerMeetingIpc(meetings)
+  registerRecordingIpc(recordings)
+  registerTranscriptionIpc(transcriptions)
 
   // Renderer yalnızca mikrofon izni isteyebilir; kamera ve diğer izin istekleri reddedilir.
   session.defaultSession.setPermissionRequestHandler(
@@ -135,6 +192,8 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   recordings?.stopAll()
+  // Çalışan whisper yetim kalmasın; Meeting Transcribing kalır ve açılışta Closed'a döner.
+  transcriptions?.shutdown()
   db?.close()
 })
 

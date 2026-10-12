@@ -38,6 +38,7 @@ export type MeetingErrorCode =
   | 'invalid-transition'
   | 'approved-immutable'
   | 'invalid-input'
+  | 'model-missing'
   | 'internal-error'
 
 export type MeetingResult<T> = IpcResult<T, MeetingErrorCode>

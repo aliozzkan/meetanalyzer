@@ -7,16 +7,19 @@ import { useRecorder } from '../recording/use-recorder'
 import { formatMeetingDate } from './format-date'
 import { LANGUAGE_LABELS, STATE_LABELS } from './labels'
 import { MeetingActions } from './meeting-actions'
+import { TranscriptionStatus } from '../transcription/transcription-status'
+import type { TranscriptionApi } from '../transcription/use-transcription'
 import type { MeetingsApi } from './use-meetings'
 
 interface Props {
   api: MeetingsApi
+  transcription: TranscriptionApi
   meetingId: string
   onBack: () => void
 }
 
-// Transcription (issue 09) ve Correction (10) alanları sonraki issue'larda bu ekrana eklenir.
-export function MeetingDetail({ api, meetingId, onBack }: Props): React.JSX.Element {
+// Correction (issue 10) alanları sonraki issue'larda bu ekrana eklenir.
+export function MeetingDetail({ api, transcription, meetingId, onBack }: Props): React.JSX.Element {
   const meeting = api.meetings.find((candidate) => candidate.id === meetingId)
   const recorder = useRecorder(meetingId, api.refresh)
 
@@ -42,6 +45,7 @@ export function MeetingDetail({ api, meetingId, onBack }: Props): React.JSX.Elem
               <MeetingActions
                 meeting={meeting}
                 onClose={api.close}
+                onTranscribe={transcription.transcribe}
                 closeDisabled={recorder.state !== 'idle'}
                 onRemove={async (id) => {
                   if (await api.remove(id)) onBack()
@@ -49,6 +53,8 @@ export function MeetingDetail({ api, meetingId, onBack }: Props): React.JSX.Elem
               />
             </div>
           </div>
+
+          <TranscriptionStatus meeting={meeting} transcription={transcription} />
 
           <Card>
             <CardHeader>
