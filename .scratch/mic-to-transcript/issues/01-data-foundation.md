@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: —
 
 # Veri temeli: SQLite şeması, config modülü ve test altyapısı

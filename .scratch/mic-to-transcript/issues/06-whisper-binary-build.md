@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: —
 
 # whisper-cli binary'si ve VAD modeli

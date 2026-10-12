@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: 01, 06
 
 # Tek bir Recording'i transcribe etme ve Suspect Word üretme

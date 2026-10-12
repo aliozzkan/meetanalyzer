@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: 03
 
 # Recording sırasında çökme sonrası toparlanma
