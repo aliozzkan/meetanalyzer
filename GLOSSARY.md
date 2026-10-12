@@ -8,6 +8,10 @@ Kullanıcının katıldığı online toplantıları kaydeden, metne döken, kull
 Kullanıcının katıldığı bir online toplantının uygulamadaki karşılığı; Recording'leri, Transcript'i ve Analysis'i bir arada tutar. Recording başlatılırken açık Meeting yoksa otomatik oluşur.
 _Avoid_: Meet, call, görüşme
 
+**Title**:
+Kullanıcının bir Meeting'e verdiği, isteğe bağlı ve yalnızca lokalde tutulan ad (en fazla 120 karakter, baştaki/sondaki boşluklar kırpılır). Boşsa arayüz Meeting'i tarih/saatiyle gösterir. Meeting'in her durumunda, Approved'dan sonra da değiştirilebilir; Approved Transcript'in değişmezliği Title'ı kapsamaz. Analysis Request ile backend'e gönderilmez.
+_Avoid_: Name, başlık (arayüz metni dışında), subject
+
 **Closed Meeting**:
 Toplantı bittiği için kapatılmış, Transcription'ı henüz başlatılmamış Meeting; artık yeni Recording eklenemez. En az bir Recording'i olmayan Meeting kapatılamaz, silinir.
 _Avoid_: Finished meeting, ended meeting
