@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: 01
 
 # Ayarlar modal'ı ve tema (Default Language dahil)
@@ -17,10 +17,10 @@ Backlog 08'i (Default Language ayarı) kapsar.
 
 ## Kabul kriterleri
 
-- [ ] Default Language değiştirilip uygulama yeniden başlatılınca korunur; Yeni Meeting bu dille önerilir.
-- [ ] Tema footer menüsünden ve Ayarlar'dan değişince diğeri de güncellenir; yeniden başlatınca korunur; "Sistem"de OS temasını izler.
-- [ ] Koyu temada native menüler/scrollbar'lar uyum sağlar (`nativeTheme`).
-- [ ] ⌘, ve "Ayarlar…" menüsü dialog'u açar.
+- [x] Default Language değiştirilip uygulama yeniden başlatılınca korunur; Yeni Meeting bu dille önerilir.
+- [x] Tema footer menüsünden ve Ayarlar'dan değişince diğeri de güncellenir; yeniden başlatınca korunur; "Sistem"de OS temasını izler.
+- [x] Koyu temada native menüler/scrollbar'lar uyum sağlar (`nativeTheme`).
+- [x] ⌘, ve "Ayarlar…" menüsü dialog'u açar.
 - [x] `localStorage` erişilemese de uygulama Sistem teması ile açılır.
 
 ## Comments
@@ -34,3 +34,7 @@ Backlog 08'i (Default Language ayarı) kapsar.
 - **Menü:** Electron'un varsayılan menüsü özel şablonla değişti; macOS'ta uygulama menüsüne "Ayarlar…" eklendi. Windows/Linux'ta Ctrl+, çalışsın diye "Ayarlar…" File menüsünde. Varsayılan Help menüsü (Electron bağlantıları) düştü.
 - **whisper sürümü:** Hakkında ekranı çalışan binary'yi sorgulamaz; `WHISPER_CPP_VERSION` (`src/main/config.ts`) gösterilir. `version.test.ts`, değerin `build-whisper.sh` içindeki `WHISPER_CPP_TAG` ile aynı olduğunu denetler.
 - **Kapsam dışı bırakılanlar (review):** `theme.ts` ile `use-sidebar-open.ts`'teki try/catch'li `localStorage` okuma/yazma benzer. Üçüncü kullanım gelene kadar ortak yardımcıya çıkarılmadı.
+
+**2026-10-20 (manuel doğrulama):**
+
+- Gerçek Electron penceresinde denendi: ⌘, ve "Ayarlar…" (pencere kapalıyken dahil), koyu temada native menü ve scrollbar uyumu, "Sistem"in OS temasını izlemesi, Default Language'ın yeniden başlatmada korunup Home'da önerilmesi, veri klasörünü Finder'da açma. Hepsi beklendiği gibi çalışıyor.
