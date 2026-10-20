@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: 01, 02
 
 # Yeni Meeting split button'u ve kayıt pill'i
@@ -19,7 +19,7 @@ Spec: [../spec.md](../spec.md) → "Sidebar > Üst alan", "Kısayollar"
 ## Kabul kriterleri
 
 - [x] Üç durum arasındaki geçişler doğru çalışır (başlat → kayıt → durdur → Meeting'i kapat).
-- [ ] Başka bir ekrandayken pill'deki durdur kaydı düzgünce bitirir (WAV geçerli, `recording_channels` süresi yazılı).
+- [x] Başka bir ekrandayken pill'deki durdur kaydı düzgünce bitirir (WAV geçerli, `recording_channels` süresi yazılı).
 - [x] ⌘N açık Meeting varken yeni Meeting oluşturmaz.
 - [x] Süre göstergesi detaydaki `RecordingControls` ile aynı değeri gösterir.
 
@@ -33,3 +33,7 @@ Spec: [../spec.md](../spec.md) → "Sidebar > Üst alan", "Kısayollar"
 - **⌘N:** `newMeetingShortcutAction` (saf, testli). Pencere kapalıyken seçilirse 02'deki bekleyen-istek mekanizması genel bir uygulama komutu kanalına (`AppCommand`, `app:command`, `app:take-pending-command`) dönüştü; ⌘, de aynı kanalı kullanır. Uygulama açılırken gelen ⌘N, Meeting listesi ve Default Language okunana kadar bekletilir. Başlatma sürerken gelen ikinci istek (çift tıklama, art arda ⌘N) yok sayılır.
 - **Menü:** macOS'ta File menüsü "Yeni Meeting" (⌘N) ve Kapat; diğer platformlarda File menüsünde "Yeni Meeting" ve "Ayarlar…".
 - **Spec'te sahipsiz kalan:** Kısayollar tablosu ⌘B için View > Sidebar menü öğesi ve ⌘[ / ⌘] için menü karşılığı istiyor; 01 ve 03 kapsamında yok, ayrı bir issue'ya bırakıldı.
+
+**2026-10-20 (manuel doğrulama):**
+
+- Gerçek Electron penceresinde ve gerçek mikrofonla denendi: pill'den durdurulan kaydın sayıya eklenip "Metne dök" ile işlenmesi, File > Yeni Meeting ve ⌘N (açık Meeting varken/yokken, pencere kapalıyken), başlatma sırasında kırmızı pill'in erken görünmemesi, dar pencerede ikon ve tooltip. Hepsi beklendiği gibi çalışıyor.
