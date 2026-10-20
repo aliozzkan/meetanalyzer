@@ -29,6 +29,10 @@ export const WHISPER_VAD_SAMPLES_OVERLAP_S = 0.1
 // aynı olmalıdır; birini değiştirirken diğerini de güncelle.
 export const WHISPER_VAD_MODEL_FILE = 'ggml-silero-v6.2.0.bin'
 
+// docs/tuning.md → whisper.cpp sürümü. Hakkında ekranında gösterilir; scripts/build-whisper.sh içindeki
+// WHISPER_CPP_TAG ile aynı olmalıdır (src/main/whisper/version.test.ts denetler).
+export const WHISPER_CPP_VERSION = 'v1.9.5'
+
 // docs/tuning.md → Transcription modeli, Model kaynağı, Model SHA-256. Revision ve hash birlikte güncellenir.
 export const TRANSCRIPTION_MODEL = {
   ...TRANSCRIPTION_MODEL_INFO,

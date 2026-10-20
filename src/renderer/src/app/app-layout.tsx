@@ -5,6 +5,9 @@ import { useMeetings } from '../features/meetings/use-meetings'
 import { useModel } from '../features/model/use-model'
 import { isBusyWith } from '../features/recording/recorder-controller'
 import { useRecorder } from '../features/recording/use-recorder'
+import { SettingsDialog } from '../features/settings/settings-dialog'
+import { useDefaultLanguage } from '../features/settings/use-default-language'
+import { useSettingsDialog } from '../features/settings/use-settings-dialog'
 import { AppSidebar } from '../features/shell/app-sidebar'
 import { useHistoryShortcuts } from '../features/shell/use-history-shortcuts'
 import { useSidebarOpen } from '../features/shell/use-sidebar-open'
@@ -20,6 +23,8 @@ export function AppLayout(): React.JSX.Element {
   const model = useModel()
   const transcription = useTranscription(model, meetings.refresh)
   const recorder = useRecorder(meetings.refresh)
+  const defaultLanguage = useDefaultLanguage()
+  const settings = useSettingsDialog()
   const [sidebarOpen, setSidebarOpen] = useSidebarOpen()
   useHistoryShortcuts()
 
@@ -28,6 +33,7 @@ export function AppLayout(): React.JSX.Element {
     model,
     transcription,
     recorder,
+    defaultLanguage,
     removeMeeting: async (id) => {
       if (isBusyWith(recorder, id)) await recorder.stopQuietly()
       return meetings.remove(id)
@@ -36,7 +42,11 @@ export function AppLayout(): React.JSX.Element {
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <AppSidebar meetings={meetings} transcription={transcription} />
+      <AppSidebar
+        meetings={meetings}
+        transcription={transcription}
+        onOpenSettings={() => settings.setOpen(true)}
+      />
       <SidebarInset className="h-svh">
         {/* macOS'ta içerik alanının üstü de pencere sürükleme alanıdır; kaydırılan içeriğin dışında kalır. */}
         {IS_MAC && <div className="app-drag h-8 shrink-0" />}
@@ -46,6 +56,7 @@ export function AppLayout(): React.JSX.Element {
           </div>
         </div>
       </SidebarInset>
+      <SettingsDialog dialog={settings} language={defaultLanguage} />
       <Toaster />
     </SidebarProvider>
   )

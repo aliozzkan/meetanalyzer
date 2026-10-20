@@ -5,6 +5,7 @@ import type { ModelState } from '../shared/model'
 import type { Transcript, TranscriptResult, WordAudio } from '../shared/transcript'
 import type { TranscriptionStatus } from '../shared/transcription'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
+import type { AppInfo, SettingsResult, Theme } from '../shared/settings'
 
 // Custom APIs for renderer
 const api = {
@@ -63,6 +64,27 @@ const api = {
         callback(state)
       ipcRenderer.on('model:state', listener)
       return () => ipcRenderer.removeListener('model:state', listener)
+    }
+  },
+  settings: {
+    getDefaultLanguage: (): Promise<SettingsResult<Language>> =>
+      ipcRenderer.invoke('settings:get-default-language'),
+    setDefaultLanguage: (language: Language): Promise<SettingsResult<void>> =>
+      ipcRenderer.invoke('settings:set-default-language', language),
+    setTheme: (theme: Theme): Promise<SettingsResult<void>> =>
+      ipcRenderer.invoke('settings:set-theme', theme)
+  },
+  app: {
+    getInfo: (): Promise<AppInfo> => ipcRenderer.invoke('app:get-info'),
+    /** Veri klasörünü açar; açılamazsa hata mesajını döndürür. */
+    showDataFolder: (): Promise<string | null> => ipcRenderer.invoke('app:show-data-folder'),
+    /** Pencere yokken "Ayarlar…" seçildiyse bir kez true döner (bkz. src/main/app/ipc.ts). */
+    takePendingSettings: (): Promise<boolean> => ipcRenderer.invoke('app:take-pending-settings'),
+    // Uygulama menüsündeki "Ayarlar…" (⌘,) tıklanınca çağrılır; dönen işlev aboneliği kaldırır.
+    onOpenSettings: (callback: () => void): (() => void) => {
+      const listener = (): void => callback()
+      ipcRenderer.on('app:open-settings', listener)
+      return () => ipcRenderer.removeListener('app:open-settings', listener)
     }
   }
 }

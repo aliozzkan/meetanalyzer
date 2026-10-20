@@ -80,5 +80,12 @@ export const migrations: string[] = [
   // Servis de kontrol eder; bu, veritabanı düzeyindeki son güvencedir.
   `
   CREATE UNIQUE INDEX one_recording_meeting ON meetings (state) WHERE state = 'recording';
+  `,
+  // Kullanıcı ayarları (ör. Default Language). Değerler uygulama tarafında doğrulanır.
+  `
+  CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
   `
 ]

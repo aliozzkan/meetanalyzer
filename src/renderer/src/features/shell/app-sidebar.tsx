@@ -1,24 +1,31 @@
+import { Settings } from 'lucide-react'
 import { NavLink } from 'react-router'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarTrigger
 } from '@renderer/components/ui/sidebar'
 import { cn } from '@renderer/lib/utils'
 import { IS_MAC } from '@renderer/lib/platform'
 import { paths } from '../../app/paths'
 import { MeetingNav } from '../meetings/meeting-nav'
+import { ThemeMenu } from '../settings/theme-menu'
 import type { MeetingsApi } from '../meetings/use-meetings'
 import type { TranscriptionApi } from '../transcription/use-transcription'
 
 interface Props {
   meetings: MeetingsApi
   transcription: TranscriptionApi
+  onOpenSettings: () => void
 }
 
-// Üst alan (Yeni Meeting / kayıt pill'i) issue 03'te, footer (Ayarlar, tema, model) issue 02 ve 07'de gelir.
-export function AppSidebar({ meetings, transcription }: Props): React.JSX.Element {
+// Üst alan (Yeni Meeting / kayıt pill'i) issue 03'te, footer'daki model göstergesi issue 07'de gelir.
+export function AppSidebar({ meetings, transcription, onOpenSettings }: Props): React.JSX.Element {
   return (
     <Sidebar collapsible="icon">
       {/* macOS'ta trafik ışıkları sidebar'ın üstüne oturur; başlık alanı pencere sürükleme alanıdır. */}
@@ -44,6 +51,19 @@ export function AppSidebar({ meetings, transcription }: Props): React.JSX.Elemen
           transcription={transcription.status}
         />
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Ayarlar" onClick={onOpenSettings}>
+              <Settings />
+              <span>Ayarlar</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <ThemeMenu />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   )
 }

@@ -6,7 +6,7 @@ import type { IpcResult } from './ipc-result'
 export const LANGUAGES = ['tr', 'en'] as const
 export type Language = (typeof LANGUAGES)[number]
 
-// docs/tuning.md → Varsayılan Language. Default Language ayarı gelene kadar sabittir (backlog 08).
+// docs/tuning.md → Varsayılan Language. Kullanıcı Default Language seçmediyse kullanılır (Ayarlar > Genel).
 export const DEFAULT_LANGUAGE: Language = 'tr'
 
 // Bu dilimde yaşam döngüsünün yalnızca Approved'a kadar olan kısmı vardır.

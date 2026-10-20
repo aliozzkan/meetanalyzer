@@ -27,6 +27,10 @@ import { requestMicrophoneAccess } from './recordings/microphone'
 import { recoverInterruptedRecordings } from './recordings/recovery'
 import { registerRecordingIpc } from './recordings/ipc'
 import { createRecordingService, type RecordingService } from './recordings/recording-service'
+import { registerAppIpc } from './app/ipc'
+import { registerSettingsIpc } from './settings/ipc'
+import { createSettingsService } from './settings/settings-service'
+import { installAppMenu } from './menu'
 
 let db: Db | undefined
 let recordings: RecordingService | undefined
@@ -189,6 +193,10 @@ app.whenReady().then(() => {
       meetings
     })
   )
+
+  registerSettingsIpc(createSettingsService({ db: database }))
+  const appIpc = registerAppIpc({ dataDir: app.getPath('userData'), createWindow })
+  installAppMenu({ openSettings: appIpc.openSettings })
 
   // Renderer yalnızca mikrofon izni isteyebilir; kamera ve diğer izin istekleri reddedilir.
   session.defaultSession.setPermissionRequestHandler(
