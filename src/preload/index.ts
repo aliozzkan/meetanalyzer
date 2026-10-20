@@ -5,7 +5,8 @@ import type { ModelState } from '../shared/model'
 import type { Transcript, TranscriptResult, WordAudio } from '../shared/transcript'
 import type { TranscriptionStatus } from '../shared/transcription'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
-import type { AppInfo, SettingsResult, Theme } from '../shared/settings'
+import type { AppCommand, AppInfo } from '../shared/app'
+import type { SettingsResult, Theme } from '../shared/settings'
 
 // Custom APIs for renderer
 const api = {
@@ -78,13 +79,15 @@ const api = {
     getInfo: (): Promise<AppInfo> => ipcRenderer.invoke('app:get-info'),
     /** Veri klasörünü açar; açılamazsa hata mesajını döndürür. */
     showDataFolder: (): Promise<string | null> => ipcRenderer.invoke('app:show-data-folder'),
-    /** Pencere yokken "Ayarlar…" seçildiyse bir kez true döner (bkz. src/main/app/ipc.ts). */
-    takePendingSettings: (): Promise<boolean> => ipcRenderer.invoke('app:take-pending-settings'),
-    // Uygulama menüsündeki "Ayarlar…" (⌘,) tıklanınca çağrılır; dönen işlev aboneliği kaldırır.
-    onOpenSettings: (callback: () => void): (() => void) => {
-      const listener = (): void => callback()
-      ipcRenderer.on('app:open-settings', listener)
-      return () => ipcRenderer.removeListener('app:open-settings', listener)
+    /** Pencere yokken menüden seçilen komut; bir kez döner, yoksa null (bkz. src/main/app/ipc.ts). */
+    takePendingCommand: (): Promise<AppCommand | null> =>
+      ipcRenderer.invoke('app:take-pending-command'),
+    // Uygulama menüsünden gelen komutlar; dönen işlev aboneliği kaldırır.
+    onCommand: (callback: (command: AppCommand) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, command: AppCommand): void =>
+        callback(command)
+      ipcRenderer.on('app:command', listener)
+      return () => ipcRenderer.removeListener('app:command', listener)
     }
   }
 }

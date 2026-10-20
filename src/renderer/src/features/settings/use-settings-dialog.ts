@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 // Transcription Modeli bölümü issue 07'de gelir.
 export const SETTINGS_SECTIONS = ['general', 'about'] as const
@@ -15,15 +15,5 @@ export interface SettingsDialogApi {
 export function useSettingsDialog(): SettingsDialogApi {
   const [open, setOpen] = useState(false)
   const [section, setSection] = useState<SettingsSection>('general')
-
-  useEffect(() => {
-    const unsubscribe = window.api.app.onOpenSettings(() => setOpen(true))
-    // Pencere kapalıyken "Ayarlar…" seçildiyse bu pencere o istekle açılmıştır.
-    void window.api.app.takePendingSettings().then((pending) => {
-      if (pending) setOpen(true)
-    })
-    return unsubscribe
-  }, [])
-
   return { open, section, setOpen, setSection }
 }

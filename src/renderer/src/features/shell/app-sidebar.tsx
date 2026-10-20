@@ -22,10 +22,17 @@ interface Props {
   meetings: MeetingsApi
   transcription: TranscriptionApi
   onOpenSettings: () => void
+  /** Üst alan: Yeni Meeting split button'u ya da Recording pill'i. */
+  top: React.ReactNode
 }
 
-// Üst alan (Yeni Meeting / kayıt pill'i) issue 03'te, footer'daki model göstergesi issue 07'de gelir.
-export function AppSidebar({ meetings, transcription, onOpenSettings }: Props): React.JSX.Element {
+// Footer'daki model göstergesi issue 07'de gelir.
+export function AppSidebar({
+  meetings,
+  transcription,
+  onOpenSettings,
+  top
+}: Props): React.JSX.Element {
   return (
     <Sidebar collapsible="icon">
       {/* macOS'ta trafik ışıkları sidebar'ın üstüne oturur; başlık alanı pencere sürükleme alanıdır. */}
@@ -44,6 +51,7 @@ export function AppSidebar({ meetings, transcription, onOpenSettings }: Props): 
         </NavLink>
         <SidebarTrigger className="app-no-drag" />
       </SidebarHeader>
+      {top}
       <SidebarContent>
         <MeetingNav
           meetings={meetings.meetings}

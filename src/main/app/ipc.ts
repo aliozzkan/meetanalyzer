@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
-import type { AppInfo } from '../../shared/settings'
+import type { AppCommand, AppInfo } from '../../shared/app'
 import { WHISPER_CPP_VERSION } from '../config'
 
 interface AppIpcOptions {
@@ -8,8 +8,8 @@ interface AppIpcOptions {
 }
 
 export interface AppIpc {
-  /** Uygulama menüsündeki "Ayarlar…" (⌘,): renderer Ayarlar dialog'unu açar. */
-  openSettings: () => void
+  /** Uygulama menüsünden gelen komutu renderer'a iletir (ör. "Ayarlar…" ⌘,, "Yeni Meeting" ⌘N). */
+  sendCommand: (command: AppCommand) => void
 }
 
 export function registerAppIpc({ dataDir, createWindow }: AppIpcOptions): AppIpc {
@@ -21,24 +21,24 @@ export function registerAppIpc({ dataDir, createWindow }: AppIpcOptions): AppIpc
   ipcMain.handle('app:show-data-folder', async () => (await shell.openPath(dataDir)) || null)
 
   // Pencere yokken (macOS'ta kapatılmışsa) yeni renderer mesajı dinlemeye başlamadan gönderilen mesaj
-  // kaybolur; bu yüzden istek saklanır ve renderer açılırken kendisi sorar.
-  let settingsPending = false
-  ipcMain.handle('app:take-pending-settings', () => {
-    const pending = settingsPending
-    settingsPending = false
-    return pending
+  // kaybolur; bu yüzden komut saklanır ve renderer açılırken kendisi sorar.
+  let pendingCommand: AppCommand | null = null
+  ipcMain.handle('app:take-pending-command', () => {
+    const command = pendingCommand
+    pendingCommand = null
+    return command
   })
 
   return {
-    openSettings: () => {
+    sendCommand: (command) => {
       const window = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
       if (!window) {
-        settingsPending = true
+        pendingCommand = command
         createWindow()
         return
       }
       window.show()
-      window.webContents.send('app:open-settings')
+      window.webContents.send('app:command', command)
     }
   }
 }

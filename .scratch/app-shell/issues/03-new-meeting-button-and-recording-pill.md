@@ -18,7 +18,18 @@ Spec: [../spec.md](../spec.md) → "Sidebar > Üst alan", "Kısayollar"
 
 ## Kabul kriterleri
 
-- [ ] Üç durum arasındaki geçişler doğru çalışır (başlat → kayıt → durdur → Meeting'i kapat).
+- [x] Üç durum arasındaki geçişler doğru çalışır (başlat → kayıt → durdur → Meeting'i kapat).
 - [ ] Başka bir ekrandayken pill'deki durdur kaydı düzgünce bitirir (WAV geçerli, `recording_channels` süresi yazılı).
-- [ ] ⌘N açık Meeting varken yeni Meeting oluşturmaz.
-- [ ] Süre göstergesi detaydaki `RecordingControls` ile aynı değeri gösterir.
+- [x] ⌘N açık Meeting varken yeni Meeting oluşturmaz.
+- [x] Süre göstergesi detaydaki `RecordingControls` ile aynı değeri gösterir.
+
+## Comments
+
+**2026-10-20 (implementasyon + review sonrası):**
+
+- **Doğrulama sınırı:** Tarayıcı pane'inde geçici bir `window.api` stub'ı ve sentetik mikrofon akışıyla denendi: split button ve dil menüsüyle başlatma (Meeting açılır), "Açık Meeting'e dön", Home'dan ⌘N (yeni Meeting oluşturmadan açık olana gider), detayda başlatılan kayıtta pill ile `RecordingControls`'un aynı mm:ss'i göstermesi, Home'dayken kaydın sürmesi ve pill'den durdurma, pill ile Meeting'e gitme, kapatınca "Yeni Meeting"e dönüş, ikon modunda kırmızı ikon ve tooltip. Gerçek Electron'da pill'den durdurulan kaydın WAV'ı ve `recording_channels` süresi **denenmedi** (pill, detaydaki kontrollerle aynı `recorder.stop()`'u çağırır).
+- **Durum seçimi:** `sidebarTopState` (saf, testli). Recorder `starting` iken (ör. mikrofon izni beklenirken) kırmızı pill gösterilmez, "Açık Meeting'e dön" kalır; kayıt `recording` ya da `stopping` iken pill görünür, `stopping`'de durdur kapalıdır.
+- **İkon modu:** Ticket'taki "ikona indirgenir" gereği yalnızca kırmızı ikon ve tooltip kalır; durdur butonu (`SidebarMenuAction`) ikon modunda gizlidir. Kayıt o modda Meeting açılarak durdurulur.
+- **⌘N:** `newMeetingShortcutAction` (saf, testli). Pencere kapalıyken seçilirse 02'deki bekleyen-istek mekanizması genel bir uygulama komutu kanalına (`AppCommand`, `app:command`, `app:take-pending-command`) dönüştü; ⌘, de aynı kanalı kullanır. Uygulama açılırken gelen ⌘N, Meeting listesi ve Default Language okunana kadar bekletilir. Başlatma sürerken gelen ikinci istek (çift tıklama, art arda ⌘N) yok sayılır.
+- **Menü:** macOS'ta File menüsü "Yeni Meeting" (⌘N) ve Kapat; diğer platformlarda File menüsünde "Yeni Meeting" ve "Ayarlar…".
+- **Spec'te sahipsiz kalan:** Kısayollar tablosu ⌘B için View > Sidebar menü öğesi ve ⌘[ / ⌘] için menü karşılığı istiyor; 01 ve 03 kapsamında yok, ayrı bir issue'ya bırakıldı.

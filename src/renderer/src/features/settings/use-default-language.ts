@@ -4,17 +4,22 @@ import { DEFAULT_LANGUAGE, type Language } from '@shared/meeting'
 
 export interface DefaultLanguageApi {
   language: Language
+  /** Kayıtlı ayar okundu mu? Okunmadan önce `language` varsayılan Türkçe'dir. */
+  loaded: boolean
   setLanguage: (language: Language) => Promise<void>
 }
 
 // Her yeni Meeting'e önerilen dil (GLOSSARY: Default Language). Okunamazsa varsayılan Türkçe kalır.
 export function useDefaultLanguage(): DefaultLanguageApi {
   const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     void window.api.settings.getDefaultLanguage().then((result) => {
-      if (!cancelled && result.ok) setLanguageState(result.value)
+      if (cancelled) return
+      if (result.ok) setLanguageState(result.value)
+      setLoaded(true)
     })
     return () => {
       cancelled = true
@@ -27,5 +32,5 @@ export function useDefaultLanguage(): DefaultLanguageApi {
     else toast.error(result.message)
   }, [])
 
-  return { language, setLanguage }
+  return { language, loaded, setLanguage }
 }

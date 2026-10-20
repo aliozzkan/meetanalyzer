@@ -1,7 +1,8 @@
-import { Outlet } from 'react-router'
+import { Outlet, useNavigate } from 'react-router'
 import { Toaster } from '../components/ui/sonner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { useMeetings } from '../features/meetings/use-meetings'
+import { useNewMeeting } from '../features/meetings/use-new-meeting'
 import { useModel } from '../features/model/use-model'
 import { isBusyWith } from '../features/recording/recorder-controller'
 import { useRecorder } from '../features/recording/use-recorder'
@@ -9,12 +10,16 @@ import { SettingsDialog } from '../features/settings/settings-dialog'
 import { useDefaultLanguage } from '../features/settings/use-default-language'
 import { useSettingsDialog } from '../features/settings/use-settings-dialog'
 import { AppSidebar } from '../features/shell/app-sidebar'
+import { sidebarTopState } from '../features/shell/sidebar-top'
+import { SidebarTopArea } from '../features/shell/sidebar-top-area'
+import { useAppCommands } from '../features/shell/use-app-commands'
 import { useHistoryShortcuts } from '../features/shell/use-history-shortcuts'
 import { useSidebarOpen } from '../features/shell/use-sidebar-open'
 import { useTranscription } from '../features/transcription/use-transcription'
 import { IS_MAC } from '../lib/platform'
 import { cn } from '../lib/utils'
 import type { AppContext } from './app-context'
+import { paths } from './paths'
 
 // Uygulama kabuğu: rota değişse de yaşayan durum (Meeting listesi, model, Transcription, Recorder) burada
 // tutulur. Recorder'ın burada olması, ekranlar arası gezinmenin Recording'i durdurmamasını sağlar.
@@ -25,8 +30,14 @@ export function AppLayout(): React.JSX.Element {
   const recorder = useRecorder(meetings.refresh)
   const defaultLanguage = useDefaultLanguage()
   const settings = useSettingsDialog()
+  const newMeeting = useNewMeeting(meetings, defaultLanguage)
   const [sidebarOpen, setSidebarOpen] = useSidebarOpen()
+  const navigate = useNavigate()
   useHistoryShortcuts()
+  useAppCommands({
+    'open-settings': () => settings.setOpen(true),
+    'new-meeting': newMeeting.startFromShortcut
+  })
 
   const context: AppContext = {
     meetings,
@@ -34,6 +45,7 @@ export function AppLayout(): React.JSX.Element {
     transcription,
     recorder,
     defaultLanguage,
+    newMeeting,
     removeMeeting: async (id) => {
       if (isBusyWith(recorder, id)) await recorder.stopQuietly()
       return meetings.remove(id)
@@ -46,6 +58,15 @@ export function AppLayout(): React.JSX.Element {
         meetings={meetings}
         transcription={transcription}
         onOpenSettings={() => settings.setOpen(true)}
+        top={
+          <SidebarTopArea
+            state={sidebarTopState(meetings.meetings, recorder)}
+            defaultLanguage={defaultLanguage.language}
+            onStart={(language) => void newMeeting.start(language)}
+            onOpen={(id) => void navigate(paths.meeting(id))}
+            onStop={() => void recorder.stop()}
+          />
+        }
       />
       <SidebarInset className="h-svh">
         {/* macOS'ta içerik alanının üstü de pencere sürükleme alanıdır; kaydırılan içeriğin dışında kalır. */}

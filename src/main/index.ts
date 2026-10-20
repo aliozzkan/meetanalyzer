@@ -196,7 +196,7 @@ app.whenReady().then(() => {
 
   registerSettingsIpc(createSettingsService({ db: database }))
   const appIpc = registerAppIpc({ dataDir: app.getPath('userData'), createWindow })
-  installAppMenu({ openSettings: appIpc.openSettings })
+  installAppMenu(appIpc.sendCommand)
 
   // Renderer yalnızca mikrofon izni isteyebilir; kamera ve diğer izin istekleri reddedilir.
   session.defaultSession.setPermissionRequestHandler(
