@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: resolved
 
 # Uygulama kabuğu: router, sidebar, global recorder
 
@@ -19,13 +19,13 @@ Sonraki dilimler bu kabuğun üzerine biner. Bu dilim bittiğinde uygulama yeni 
 
 ## Kabul kriterleri
 
-- [ ] Kayıt sürerken sidebar'dan başka bir Meeting'e/Home'a geçmek kaydı durdurmaz; geri dönünce süre ve seviye göstergesi akmaya devam eder.
-- [ ] Kayıt sürerken Meeting silinirse kayıt düzgünce biter ve Home'a dönülür.
+- [x] Kayıt sürerken sidebar'dan başka bir Meeting'e/Home'a geçmek kaydı durdurmaz; geri dönünce süre ve seviye göstergesi akmaya devam eder.
+- [x] Kayıt sürerken Meeting silinirse kayıt düzgünce biter ve Home'a dönülür.
 - [x] Uygulamayı yenilemek açık Meeting'i `#/meetings/:id`'den geri getirir; ⌘[ / ⌘] çalışır.
 - [x] Gruplama sınırları (gece yarısı, 7/30 gün, ay) birim testiyle doğrulanır.
 - [x] 760 px genişlikte sidebar ikon moduna iner, içerik taşmaz; yeniden başlatınca ⌘B ile seçilen durum korunur.
-- [ ] macOS'ta trafik ışıkları sidebar üstünde, pencere sürüklenebilir.
-- [ ] Mevcut Transcription/Correction/Approve akışları değişmeden çalışır.
+- [x] macOS'ta trafik ışıkları sidebar üstünde, pencere sürüklenebilir.
+- [x] Mevcut Transcription/Correction/Approve akışları değişmeden çalışır.
 
 ## Comments
 
@@ -40,3 +40,7 @@ Sonraki dilimler bu kabuğun üzerine biner. Bu dilim bittiğinde uygulama yeni 
 - **Sidebar tercihi:** ⌘B seçimi her genişlikte `localStorage`'a yazılır; dar pencerede otomatik daralma kalıcı değildir.
 - **Geçici Home:** "Meetanalyzing" başlığı + Yeni Meeting (dil select'iyle) + ModelCard. Sidebar başlığındaki "Meetanalyzing" bağlantısı Home'a dönüş yolu olarak bırakıldı (üst alanın geri kalanı issue 03).
 - **Kapsam dışı bırakılanlar (review):** `format-date` ile tarih biçimlendirmesinin tek yerde toplanması, `app/` ↔ `features/` arası çift yönlü import, `IS_MAC`'in preload'dan gelmesi.
+
+**2026-10-20 (manuel doğrulama):**
+
+- Gerçek Electron penceresinde ve gerçek mikrofonla denendi: Recording sürerken gezinme ve silme, macOS trafik ışıkları ve sürükleme alanı (ikon modu dahil), Transcription/Correction/Approve akışı. Hepsi beklendiği gibi çalışıyor.

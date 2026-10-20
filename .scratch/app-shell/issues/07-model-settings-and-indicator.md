@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: ready-for-agent
 Blocked by: 02
 
 # Transcription Modeli bölümü ve footer göstergesi

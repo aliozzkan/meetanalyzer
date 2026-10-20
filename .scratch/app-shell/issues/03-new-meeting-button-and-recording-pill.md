@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: ready-for-agent
 Blocked by: 01, 02
 
 # Yeni Meeting split button'u ve kayıt pill'i
