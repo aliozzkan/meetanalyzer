@@ -14,6 +14,7 @@ import { cn } from '@renderer/lib/utils'
 import { IS_MAC } from '@renderer/lib/platform'
 import { paths } from '../../app/paths'
 import { MeetingNav } from '../meetings/meeting-nav'
+import type { MeetingRowCommands } from '../meetings/meeting-row'
 import { ThemeMenu } from '../settings/theme-menu'
 import type { MeetingsApi } from '../meetings/use-meetings'
 import type { TranscriptionApi } from '../transcription/use-transcription'
@@ -21,6 +22,8 @@ import type { TranscriptionApi } from '../transcription/use-transcription'
 interface Props {
   meetings: MeetingsApi
   transcription: TranscriptionApi
+  /** Satır menüsündeki işlemler (Yeniden adlandır, Kapat, Metne dök, Sil). */
+  meetingCommands: MeetingRowCommands
   onOpenSettings: () => void
   /** Üst alan: Yeni Meeting split button'u ya da Recording pill'i. */
   top: React.ReactNode
@@ -30,6 +33,7 @@ interface Props {
 export function AppSidebar({
   meetings,
   transcription,
+  meetingCommands,
   onOpenSettings,
   top
 }: Props): React.JSX.Element {
@@ -57,6 +61,7 @@ export function AppSidebar({
           meetings={meetings.meetings}
           loaded={meetings.loaded}
           transcription={transcription.status}
+          commands={meetingCommands}
         />
       </SidebarContent>
       <SidebarFooter>

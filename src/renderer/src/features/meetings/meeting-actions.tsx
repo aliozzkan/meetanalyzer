@@ -2,6 +2,7 @@ import { Trash2Icon } from 'lucide-react'
 import { useState } from 'react'
 import type { MeetingSummary } from '@shared/meeting'
 import { Button } from '@renderer/components/ui/button'
+import { allowedActions } from './allowed-actions'
 import { DeleteMeetingDialog } from './delete-meeting-dialog'
 
 interface Props {
@@ -13,8 +14,7 @@ interface Props {
   closeDisabled?: boolean
 }
 
-// Kapat / Transcribe / Sil düğmeleri. Recording'i olmayan Meeting kapatılamadığı için
-// o durumda yalnızca silme sunulur (docs/meeting-lifecycle.md).
+// Detaydaki Kapat / Transcribe / Sil düğmeleri; hangisinin görüneceği `allowedActions`'tadır.
 export function MeetingActions({
   meeting,
   onClose,
@@ -23,9 +23,10 @@ export function MeetingActions({
   closeDisabled = false
 }: Props): React.JSX.Element {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const canClose = meeting.state === 'recording' && meeting.recordingCount > 0
-  const canTranscribe = meeting.state === 'closed'
-  const canRemove = meeting.state !== 'approved'
+  const allowed = allowedActions(meeting)
+  const canClose = allowed.includes('close')
+  const canTranscribe = allowed.includes('transcribe')
+  const canRemove = allowed.includes('remove')
 
   return (
     <div className="flex items-center gap-2">

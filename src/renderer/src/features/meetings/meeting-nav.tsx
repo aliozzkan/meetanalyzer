@@ -1,30 +1,31 @@
-import { format } from 'date-fns'
-import { tr } from 'date-fns/locale'
-import { NavLink, useMatch } from 'react-router'
+import { useMatch } from 'react-router'
 import type { MeetingSummary } from '@shared/meeting'
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenu
 } from '@renderer/components/ui/sidebar'
 import { paths } from '../../app/paths'
 import type { TranscriptionStatus } from '@shared/transcription'
 import { groupMeetingsByDate } from './group-meetings'
-import { meetingLabel } from './meeting-label'
-import { MeetingStatusIcon } from './meeting-status-icon'
+import { MeetingRow, type MeetingRowCommands } from './meeting-row'
 import { useNow } from './use-now'
 
 interface Props {
   meetings: MeetingSummary[]
   loaded: boolean
   transcription: TranscriptionStatus
+  commands: MeetingRowCommands
 }
 
 // Meeting'ler tarih gruplarıyla listelenir; satır adı Title, yoksa Meeting'in saatidir.
-export function MeetingNav({ meetings, loaded, transcription }: Props): React.JSX.Element {
+export function MeetingNav({
+  meetings,
+  loaded,
+  transcription,
+  commands
+}: Props): React.JSX.Element {
   const now = useNow()
   const match = useMatch(paths.meetingPattern)
   const activeId = match?.params.meetingId
@@ -44,26 +45,15 @@ export function MeetingNav({ meetings, loaded, transcription }: Props): React.JS
           <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {group.meetings.map((meeting) => {
-                const label = meetingLabel(meeting)
-                return (
-                  <SidebarMenuItem key={meeting.id}>
-                    <SidebarMenuButton
-                      isActive={meeting.id === activeId}
-                      tooltip={label}
-                      render={<NavLink to={paths.meeting(meeting.id)} />}
-                    >
-                      <span className="grid size-4 shrink-0 place-items-center">
-                        <MeetingStatusIcon meeting={meeting} transcription={transcription} />
-                      </span>
-                      <span className="truncate">{label}</span>
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        {format(meeting.createdAt, 'd MMM', { locale: tr })}
-                      </span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+              {group.meetings.map((meeting) => (
+                <MeetingRow
+                  key={meeting.id}
+                  meeting={meeting}
+                  active={meeting.id === activeId}
+                  transcription={transcription}
+                  commands={commands}
+                />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

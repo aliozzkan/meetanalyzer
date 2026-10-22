@@ -39,6 +39,11 @@ export function AppLayout(): React.JSX.Element {
     'new-meeting': newMeeting.startFromShortcut
   })
 
+  const removeMeeting = async (id: string): Promise<boolean> => {
+    if (isBusyWith(recorder, id)) await recorder.stopQuietly()
+    return meetings.remove(id)
+  }
+
   const context: AppContext = {
     meetings,
     model,
@@ -46,10 +51,7 @@ export function AppLayout(): React.JSX.Element {
     recorder,
     defaultLanguage,
     newMeeting,
-    removeMeeting: async (id) => {
-      if (isBusyWith(recorder, id)) await recorder.stopQuietly()
-      return meetings.remove(id)
-    }
+    removeMeeting
   }
 
   return (
@@ -57,6 +59,14 @@ export function AppLayout(): React.JSX.Element {
       <AppSidebar
         meetings={meetings}
         transcription={transcription}
+        // Açık Meeting silinirse MeetingPage Home'a yönlendirir.
+        meetingCommands={{
+          rename: meetings.rename,
+          close: (id) => void meetings.close(id),
+          transcribe: transcription.transcribe,
+          remove: (id) => void removeMeeting(id),
+          hasActiveRecording: (id) => isBusyWith(recorder, id)
+        }}
         onOpenSettings={() => settings.setOpen(true)}
         top={
           <SidebarTopArea
