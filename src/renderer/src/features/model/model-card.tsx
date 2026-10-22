@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/ale
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { Progress } from '@renderer/components/ui/progress'
+import { downloadPercent, megabytes } from './model-status'
 import type { ModelApi } from './use-model'
 
 const DISMISSED_KEY = 'model-onboarding-dismissed'
@@ -16,11 +17,6 @@ function readDismissed(): boolean {
   } catch {
     return false
   }
-}
-
-// Ondalık MB (Finder ve Hugging Face'in gösterdiği gibi): 574 041 195 bayt = 574 MB.
-function megabytes(bytes: number): string {
-  return `${Math.round(bytes / 1e6)} MB`
 }
 
 // Transcription modelinin durumu: ilk açılışta indirme sorusu, indirme sürerken ilerleme, hatada yeniden deneme.
@@ -40,7 +36,7 @@ export function ModelCard({ model, forceAsk = false, onSkip }: Props): React.JSX
   if (!state || state.status === 'ready') return null
 
   if (state.status === 'downloading') {
-    const percent = Math.min(100, Math.round((state.receivedBytes / state.totalBytes) * 100))
+    const percent = downloadPercent(state.receivedBytes, state.totalBytes)
     return (
       <Card>
         <CardHeader>

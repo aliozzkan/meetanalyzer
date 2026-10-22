@@ -1,6 +1,20 @@
-import { existsSync, statSync } from 'node:fs'
-import type { ModelState } from '../../shared/model'
+import { existsSync, rmSync, statSync } from 'node:fs'
+import {
+  MODEL_REMOVE_BLOCKED,
+  type ModelRemoveErrorCode,
+  type ModelState
+} from '../../shared/model'
 import { ModelDownloadError, type DownloadProgress } from './model-downloader'
+
+export class ModelError extends Error {
+  constructor(
+    readonly code: ModelRemoveErrorCode,
+    message: string
+  ) {
+    super(message)
+    this.name = 'ModelError'
+  }
+}
 
 export interface ModelServiceOptions {
   /** Kurulu modelin son yolu; yarım indirme `<modelPath>.part` dosyasındadır. */
@@ -12,6 +26,8 @@ export interface ModelServiceOptions {
     signal: AbortSignal
   }) => Promise<void>
   onState?: (state: ModelState) => void
+  /** Model kullanımda mı (Transcription Queue'da işlenen ya da bekleyen Meeting var); öyleyse silinemez. */
+  isInUse?: () => boolean
 }
 
 export interface ModelService {
@@ -20,6 +36,9 @@ export interface ModelService {
   start: () => Promise<void>
   /** Sürmekte olan indirmeyi durdurur; yarım dosya korunur. */
   cancel: () => void
+  /** Model dosyasını ve yarım indirmeyi siler; durum `missing` olur. İndirme sürerken ya da model
+   * kullanımdayken `ModelError` fırlatır. */
+  remove: () => void
 }
 
 // Modelin kurulu olup olmadığı ve indirme durumu. İndirme yalnızca `start` ile, kullanıcı isteğiyle başlar.
@@ -27,7 +46,8 @@ export function createModelService({
   modelPath,
   expectedSize,
   download,
-  onState
+  onState,
+  isInUse = () => false
 }: ModelServiceOptions): ModelService {
   const partPath = `${modelPath}.part`
   let state: ModelState = stateOnDisk()
@@ -107,5 +127,19 @@ export function createModelService({
     controller.abort()
   }
 
-  return { getState: () => state, start, cancel }
+  function remove(): void {
+    // İptal edilen indirme de tam çözülene kadar sürüyor sayılır: .part'a hâlâ yazıyor olabilir.
+    if (running) {
+      throw new ModelError('download-in-progress', MODEL_REMOVE_BLOCKED['download-in-progress'])
+    }
+    // Çalışan whisper modeli okuyor; bekleyen Meeting'ler de onu kullanacak.
+    if (isInUse()) {
+      throw new ModelError('in-use', MODEL_REMOVE_BLOCKED['in-use'])
+    }
+    rmSync(modelPath, { force: true })
+    rmSync(partPath, { force: true })
+    setState({ status: 'missing', partialBytes: 0 })
+  }
+
+  return { getState: () => state, start, cancel, remove }
 }

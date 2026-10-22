@@ -3,6 +3,7 @@ import { Toaster } from '../components/ui/sonner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { useMeetings } from '../features/meetings/use-meetings'
 import { useNewMeeting } from '../features/meetings/use-new-meeting'
+import { HeaderModelIndicator } from '../features/model/header-model-indicator'
 import { useModel } from '../features/model/use-model'
 import { isBusyWith } from '../features/recording/recorder-controller'
 import { useRecorder } from '../features/recording/use-recorder'
@@ -78,6 +79,9 @@ export function AppLayout(): React.JSX.Element {
               onStop={() => void recorder.stop()}
             />
           }
+          modelIndicator={
+            <HeaderModelIndicator state={model.state} onOpen={() => settings.openAt('model')} />
+          }
           // Planlar backlog 10'da; şimdilik yer tutucu.
           onViewPlans={() => void navigate(paths.home)}
         />
@@ -120,7 +124,12 @@ export function AppLayout(): React.JSX.Element {
             </div>
           </SidebarInset>
         </div>
-        <SettingsDialog dialog={settings} language={defaultLanguage} />
+        <SettingsDialog
+          dialog={settings}
+          language={defaultLanguage}
+          model={model}
+          transcription={transcription.status}
+        />
         <Toaster />
       </SidebarProvider>
     </div>

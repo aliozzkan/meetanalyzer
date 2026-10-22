@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { LANGUAGES, type Language } from '@shared/meeting'
 import type { AppInfo } from '@shared/app'
 import { THEMES, type Theme } from '@shared/settings'
+import type { TranscriptionStatus } from '@shared/transcription'
 import { Button } from '@renderer/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@renderer/components/ui/dialog'
 import { Field, FieldDescription, FieldLabel } from '@renderer/components/ui/field'
@@ -10,6 +11,8 @@ import { NativeSelect, NativeSelectOption } from '@renderer/components/ui/native
 import { IS_MAC } from '@renderer/lib/platform'
 import { cn } from '@renderer/lib/utils'
 import { LANGUAGE_LABELS } from '../meetings/labels'
+import { ModelSection } from '../model/model-section'
+import type { ModelApi } from '../model/use-model'
 import { SECTION_LABELS, THEME_LABELS } from './labels'
 import type { DefaultLanguageApi } from './use-default-language'
 import { SETTINGS_SECTIONS, type SettingsDialogApi } from './use-settings-dialog'
@@ -18,10 +21,18 @@ import { useTheme } from './use-theme'
 interface Props {
   dialog: SettingsDialogApi
   language: DefaultLanguageApi
+  model: ModelApi
+  /** Model silme kuralı için (kuyrukta Meeting varken silinemez). */
+  transcription: TranscriptionStatus
 }
 
 // Solunda bölüm menüsü olan Ayarlar dialog'u. Uygulama kabuğunda yaşar; Recording'i etkilemez.
-export function SettingsDialog({ dialog, language }: Props): React.JSX.Element {
+export function SettingsDialog({
+  dialog,
+  language,
+  model,
+  transcription
+}: Props): React.JSX.Element {
   return (
     <Dialog open={dialog.open} onOpenChange={dialog.setOpen}>
       <DialogContent className="grid h-[min(480px,calc(100vh-4rem))] grid-cols-[160px_1fr] gap-0 p-0 sm:max-w-3xl">
@@ -50,6 +61,9 @@ export function SettingsDialog({ dialog, language }: Props): React.JSX.Element {
         <div className="flex min-h-0 flex-col gap-6 overflow-y-auto p-6 pr-12">
           <h2 className="font-heading text-lg font-semibold">{SECTION_LABELS[dialog.section]}</h2>
           {dialog.section === 'general' && <GeneralSection language={language} />}
+          {dialog.section === 'model' && (
+            <ModelSection model={model} transcription={transcription} />
+          )}
           {dialog.section === 'about' && <AboutSection />}
         </div>
       </DialogContent>

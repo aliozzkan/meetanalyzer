@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { Language, MeetingResult, MeetingSummary } from '../shared/meeting'
-import type { ModelState } from '../shared/model'
+import type { ModelResult, ModelState } from '../shared/model'
 import type { Transcript, TranscriptResult, WordAudio } from '../shared/transcript'
 import type { TranscriptionStatus } from '../shared/transcription'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
@@ -61,6 +61,10 @@ const api = {
     getState: (): Promise<ModelState> => ipcRenderer.invoke('model:get-state'),
     start: (): Promise<ModelState> => ipcRenderer.invoke('model:start'),
     cancel: (): Promise<void> => ipcRenderer.invoke('model:cancel'),
+    /** Modeli ve yarım indirmeyi siler; indirme sürerken ya da kuyruk doluyken reddedilir. */
+    remove: (): Promise<ModelResult<ModelState>> => ipcRenderer.invoke('model:remove'),
+    /** Model dosyasını Finder'da gösterir (yoksa klasörünü açar); açılamazsa hata mesajını döndürür. */
+    showInFolder: (): Promise<string | null> => ipcRenderer.invoke('model:show-in-folder'),
     // Durum değişikliklerine abone olur; dönen işlev aboneliği kaldırır.
     onState: (callback: (state: ModelState) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, state: ModelState): void =>

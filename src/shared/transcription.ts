@@ -17,3 +17,8 @@ export function isProcessing(status: TranscriptionStatus, meetingId: string): bo
 export function statusShape(status: TranscriptionStatus): string {
   return JSON.stringify([status.active?.meetingId ?? null, status.queued])
 }
+
+/** Kuyrukta işlenen ya da bekleyen Meeting var mı (ör. bu sırada Transcription modeli silinemez). */
+export function hasPendingTranscription(status: TranscriptionStatus): boolean {
+  return status.active !== null || status.queued.length > 0
+}

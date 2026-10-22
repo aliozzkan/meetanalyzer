@@ -14,13 +14,21 @@ interface Props {
   fullScreen: boolean
   /** Orta: açık Meeting durumu (`OpenMeetingPill`). */
   center: React.ReactNode
+  /** Sağ: model göstergesi (`HeaderModelIndicator`); model hazırken yer kaplamaz. */
+  modelIndicator: React.ReactNode
   onViewPlans: () => void
 }
 
 // Tam genişlikte, her ekranda görünen header (spec: "Header"). macOS'ta trafik ışıkları soldaki boşluğa oturur
 // ve boş alan pencere sürükleme alanıdır; içindeki her kontrol `app-no-drag`. Windows/Linux'ta native başlık
 // çubuğu korunur, header boşluksuz ve sürüklemesizdir.
-export function AppHeader({ history, fullScreen, center, onViewPlans }: Props): React.JSX.Element {
+export function AppHeader({
+  history,
+  fullScreen,
+  center,
+  modelIndicator,
+  onViewPlans
+}: Props): React.JSX.Element {
   return (
     <header
       className={cn(
@@ -63,8 +71,8 @@ export function AppHeader({ history, fullScreen, center, onViewPlans }: Props): 
 
       <div className="flex shrink-0 items-center justify-center">{center}</div>
 
-      {/* Model göstergesi (issue 07) "Planları Görüntüle"nin soluna gelir. */}
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+        {modelIndicator}
         <RainbowButton size="sm" variant="outline" onClick={onViewPlans} className="app-no-drag">
           Planları Görüntüle
         </RainbowButton>

@@ -17,10 +17,12 @@ export function getModelPath(modelsDir: string): string {
 // Üretim bağlantısı: config'teki sabit URL, hash ve boyutla indiren servis.
 export function createAppModelService({
   modelsDir,
-  onState
+  onState,
+  isInUse
 }: {
   modelsDir: string
   onState: (state: ModelState) => void
+  isInUse: () => boolean
 }): ModelService {
   mkdirSync(modelsDir, { recursive: true })
   const modelPath = getModelPath(modelsDir)
@@ -28,6 +30,7 @@ export function createAppModelService({
     modelPath,
     expectedSize: TRANSCRIPTION_MODEL.sizeBytes,
     onState,
+    isInUse,
     download: ({ onProgress, signal }) =>
       downloadModel({
         url: TRANSCRIPTION_MODEL_URL,

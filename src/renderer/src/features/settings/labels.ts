@@ -9,5 +9,6 @@ export const THEME_LABELS: Record<Theme, string> = {
 
 export const SECTION_LABELS: Record<SettingsSection, string> = {
   general: 'Genel',
+  model: 'Transcription Modeli',
   about: 'Hakkında'
 }

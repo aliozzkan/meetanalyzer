@@ -1,10 +1,10 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { ModelState } from '../../shared/model'
 import { ModelDownloadError } from './model-downloader'
-import { createModelService, type ModelService } from './model-service'
+import { createModelService, type ModelService, type ModelServiceOptions } from './model-service'
 
 const EXPECTED_SIZE = 1_000
 
@@ -180,11 +180,107 @@ describe('Model servisi', () => {
   })
 })
 
+describe('Model silme', () => {
+  it('hazır model silinir: dosya ve yarım indirme kalıntısı kalmaz, durum missing olur', () => {
+    const { modelPath } = setup()
+    writeFileSync(modelPath, Buffer.alloc(EXPECTED_SIZE))
+    writeFileSync(`${modelPath}.part`, Buffer.alloc(10)) // önceki bir indirmeden kalmış
+    const states: ModelState[] = []
+    const service = createFresh(modelPath, { onState: (state) => states.push(state) })
+    expect(service.getState()).toEqual({ status: 'ready' })
+
+    service.remove()
+
+    expect(existsSync(modelPath)).toBe(false)
+    expect(existsSync(`${modelPath}.part`)).toBe(false)
+    expect(service.getState()).toEqual({ status: 'missing', partialBytes: 0 })
+    expect(states).toEqual([{ status: 'missing', partialBytes: 0 }])
+  })
+
+  it('olmayan model silinince hata vermez; yarım indirme kalıntısı da silinir', () => {
+    const nothing = setup()
+    nothing.service.remove()
+    expect(nothing.service.getState()).toEqual({ status: 'missing', partialBytes: 0 })
+
+    const partial = setup()
+    writeFileSync(`${partial.modelPath}.part`, Buffer.alloc(300))
+    const service = createFresh(partial.modelPath)
+    expect(service.getState()).toEqual({ status: 'missing', partialBytes: 300 })
+
+    service.remove()
+
+    expect(existsSync(`${partial.modelPath}.part`)).toBe(false)
+    expect(service.getState()).toEqual({ status: 'missing', partialBytes: 0 })
+  })
+
+  it('hata durumundaki modelin yarım dosyası silinir', async () => {
+    const { service, modelPath, downloads } = setup()
+    const failing = service.start()
+    writeFileSync(`${modelPath}.part`, Buffer.alloc(250))
+    downloads[0].fail(new ModelDownloadError('network', 'bağlantı koptu'))
+    await failing
+    expect(service.getState().status).toBe('error')
+
+    service.remove()
+
+    expect(existsSync(`${modelPath}.part`)).toBe(false)
+    expect(service.getState()).toEqual({ status: 'missing', partialBytes: 0 })
+  })
+
+  it('indirme sürerken silme reddedilir; indirme ve yarım dosya etkilenmez', async () => {
+    const { service, modelPath, downloads } = setup()
+    const running = service.start()
+    writeFileSync(`${modelPath}.part`, Buffer.alloc(400))
+
+    expect(() => service.remove()).toThrow(
+      expect.objectContaining({ name: 'ModelError', code: 'download-in-progress' })
+    )
+    expect(existsSync(`${modelPath}.part`)).toBe(true)
+    expect(service.getState().status).toBe('downloading')
+
+    downloads[0].succeed()
+    await running
+    expect(service.getState()).toEqual({ status: 'ready' })
+  })
+
+  it('iptal edilen indirme henüz çözülmemişken de silme reddedilir', async () => {
+    const { service } = setup()
+    const running = service.start()
+    service.cancel()
+
+    expect(() => service.remove()).toThrow(
+      expect.objectContaining({ code: 'download-in-progress' })
+    )
+    await running
+    service.remove()
+    expect(service.getState()).toEqual({ status: 'missing', partialBytes: 0 })
+  })
+
+  it('model kullanımdayken (Transcription Queue dolu) silme reddedilir; kuyruk boşalınca silinir', () => {
+    const { modelPath } = setup()
+    writeFileSync(modelPath, Buffer.alloc(EXPECTED_SIZE))
+    let inUse = true
+    const service = createFresh(modelPath, { isInUse: () => inUse })
+
+    expect(() => service.remove()).toThrow(expect.objectContaining({ code: 'in-use' }))
+    expect(existsSync(modelPath)).toBe(true)
+    expect(service.getState()).toEqual({ status: 'ready' })
+
+    inUse = false
+    service.remove()
+    expect(existsSync(modelPath)).toBe(false)
+  })
+})
+
 // Aynı yola yeni bir servis kurar (başlangıç durumunu yeniden okumak için).
-function createFresh(modelPath: string): ModelService {
+function createFresh(
+  modelPath: string,
+  options: Partial<Pick<ModelServiceOptions, 'onState' | 'isInUse'>> = {}
+): ModelService {
   return createModelService({
     modelPath,
     expectedSize: EXPECTED_SIZE,
-    download: () => Promise.reject(new Error('kullanılmamalı'))
+    download: () => Promise.reject(new Error('kullanılmamalı')),
+    ...options
   })
 }

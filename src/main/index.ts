@@ -22,6 +22,7 @@ import {
   type TranscriptionQueue
 } from './transcription/transcription-queue'
 import { whisperThreads } from './transcription/whisper-args'
+import { hasPendingTranscription } from '../shared/transcription'
 import { createPowerGuard } from './power/power-guard'
 import { requestMicrophoneAccess } from './recordings/microphone'
 import { recoverInterruptedRecordings } from './recordings/recovery'
@@ -137,8 +138,13 @@ app.whenReady().then(() => {
 
   // Transcription modeli: indirme yalnızca kullanıcı isteğiyle başlar (otomatik indirme yok).
   const modelsDir = join(app.getPath('userData'), 'models')
-  const model = createAppModelService({ modelsDir, onState: createStateBroadcaster() })
-  registerModelIpc(model)
+  const model = createAppModelService({
+    modelsDir,
+    onState: createStateBroadcaster(),
+    // Kuyruk modele bağlı kurulduğu için ona burada geç bağlanılır (kuyruk yoksa model kullanımda değildir).
+    isInUse: () => (transcriptions ? hasPendingTranscription(transcriptions.getStatus()) : false)
+  })
+  registerModelIpc(model, { modelPath: getModelPath(modelsDir) })
 
   const whisperPaths = getWhisperPaths({
     isPackaged: app.isPackaged,
