@@ -1,10 +1,7 @@
+import { cn } from 'cn'
 import { Loader2Icon } from 'lucide-react'
 
-import * as React from 'react'
-
-import { cn } from '@renderer/lib/utils'
-
-function Spinner({ className, ...props }: React.ComponentProps<'svg'>): React.JSX.Element {
+function Spinner({ className, ...props }: React.ComponentProps<'svg'>) {
   return (
     <Loader2Icon
       data-slot="spinner"

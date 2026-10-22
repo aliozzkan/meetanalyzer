@@ -28,5 +28,15 @@ export default defineConfig(
       ...eslintPluginReactRefresh.configs.vite.rules
     }
   },
+  {
+    // shadcn CLI'nin ürettiği kod: `shadcn apply`/`add` dosyaları baştan yazdığı için elle düzeltme tutmaz.
+    files: ['src/renderer/src/components/ui/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'react-refresh/only-export-components': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react/prop-types': 'off'
+    }
+  },
   eslintConfigPrettier
 )

@@ -30,7 +30,7 @@ export function MeetingStatusIcon({ meeting, transcription }: Props): React.JSX.
       )
     }
     case 'transcribed':
-      return dot('bg-main ring-2 ring-border')
+      return dot('bg-primary')
     case 'approved':
       return <CheckIcon role="img" aria-label={label} />
   }

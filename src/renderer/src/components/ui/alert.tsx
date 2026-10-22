@@ -1,16 +1,15 @@
-import { cva, type VariantProps } from 'class-variance-authority'
-
 import * as React from 'react'
-
-import { cn } from '@renderer/lib/utils'
+import { cva, type VariantProps } from 'class-variance-authority'
+import { cn } from 'cn'
 
 const alertVariants = cva(
-  'relative w-full rounded-base border-2 border-border px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current shadow-shadow',
+  "group/alert relative grid w-full gap-0.5 rounded-lg border px-2.5 py-2 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground',
-        destructive: 'bg-black text-white'
+        default: 'bg-card text-card-foreground',
+        destructive:
+          'bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current'
       }
     },
     defaultVariants: {
@@ -23,7 +22,7 @@ function Alert({
   className,
   variant,
   ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof alertVariants>): React.JSX.Element {
+}: React.ComponentProps<'div'> & VariantProps<typeof alertVariants>) {
   return (
     <div
       data-slot="alert"
@@ -34,22 +33,12 @@ function Alert({
   )
 }
 
-function AlertTitle({ className, ...props }: React.ComponentProps<'div'>): React.JSX.Element {
+function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot="alert-title"
-      className={cn('col-start-2 line-clamp-1 min-h-4 font-heading tracking-tight', className)}
-      {...props}
-    />
-  )
-}
-
-function AlertDescription({ className, ...props }: React.ComponentProps<'div'>): React.JSX.Element {
-  return (
-    <div
-      data-slot="alert-description"
       className={cn(
-        'col-start-2 grid justify-items-start gap-1 text-sm font-base [&_p]:leading-relaxed',
+        'font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground',
         className
       )}
       {...props}
@@ -57,4 +46,23 @@ function AlertDescription({ className, ...props }: React.ComponentProps<'div'>):
   )
 }
 
-export { Alert, AlertTitle, AlertDescription }
+function AlertDescription({ className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="alert-description"
+      className={cn(
+        'text-sm text-balance text-muted-foreground md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4',
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AlertAction({ className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div data-slot="alert-action" className={cn('absolute top-2 right-2', className)} {...props} />
+  )
+}
+
+export { Alert, AlertTitle, AlertDescription, AlertAction }

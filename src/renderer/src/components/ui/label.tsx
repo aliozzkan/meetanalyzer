@@ -1,13 +1,14 @@
+'use client'
+
 import * as React from 'react'
+import { cn } from 'cn'
 
-import { cn } from '@renderer/lib/utils'
-
-function Label({ className, ...props }: React.ComponentProps<'label'>): React.JSX.Element {
+function Label({ className, ...props }: React.ComponentProps<'label'>) {
   return (
     <label
       data-slot="label"
       className={cn(
-        'text-sm font-heading leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-disabled:cursor-not-allowed peer-data-disabled:opacity-70',
+        'flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
         className
       )}
       {...props}

@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 'use client'
 
 import { mergeProps } from '@base-ui/react/merge-props'
@@ -139,7 +138,7 @@ function FormDescription({ className, ...props }: React.ComponentProps<'p'>): Re
     <p
       data-slot="form-description"
       id={formDescriptionId}
-      className={cn('text-sm font-base text-foreground', className)}
+      className={cn('text-sm text-foreground', className)}
       {...props}
     />
   )
@@ -157,7 +156,7 @@ function FormMessage({ className, ...props }: React.ComponentProps<'p'>): React.
     <p
       data-slot="form-message"
       id={formMessageId}
-      className={cn('text-sm font-base text-red-500', className)}
+      className={cn('text-sm text-destructive', className)}
       {...props}
     >
       {body}

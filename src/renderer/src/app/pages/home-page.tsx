@@ -17,7 +17,7 @@ export function HomePage(): React.JSX.Element {
 
   return (
     <>
-      <h1 className="text-2xl font-heading">Meetanalyzing</h1>
+      <h1 className="font-heading text-2xl font-semibold">Meetanalyzing</h1>
       <ModelCard
         model={model}
         forceAsk={transcription.askingModel}

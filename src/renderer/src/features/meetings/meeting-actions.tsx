@@ -41,7 +41,7 @@ export function MeetingActions({
         </Button>
       )}
       {canRemove && (
-        <Button variant="neutral" size="sm" onClick={() => setConfirmingDelete(true)}>
+        <Button variant="outline" size="sm" onClick={() => setConfirmingDelete(true)}>
           <Trash2Icon /> Sil
         </Button>
       )}

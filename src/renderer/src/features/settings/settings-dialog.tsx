@@ -27,7 +27,7 @@ export function SettingsDialog({ dialog, language }: Props): React.JSX.Element {
       <DialogContent className="grid h-[min(480px,calc(100vh-4rem))] grid-cols-[160px_1fr] gap-0 p-0 sm:max-w-3xl">
         <nav
           aria-label="Ayarlar bölümleri"
-          className="flex flex-col gap-1 border-r-2 border-border p-3"
+          className="flex flex-col gap-1 border-r border-border p-3"
         >
           <DialogTitle className="px-2 pb-2">Ayarlar</DialogTitle>
           {SETTINGS_SECTIONS.map((section) => (
@@ -37,10 +37,10 @@ export function SettingsDialog({ dialog, language }: Props): React.JSX.Element {
               aria-current={dialog.section === section ? 'page' : undefined}
               onClick={() => dialog.setSection(section)}
               className={cn(
-                'rounded-base border-2 border-transparent px-2 py-1.5 text-left text-sm',
+                'rounded-md px-2 py-1.5 text-left text-sm',
                 dialog.section === section
-                  ? 'border-border bg-main text-main-foreground'
-                  : 'hover:border-border'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'hover:bg-accent/50'
               )}
             >
               {SECTION_LABELS[section]}
@@ -48,7 +48,7 @@ export function SettingsDialog({ dialog, language }: Props): React.JSX.Element {
           ))}
         </nav>
         <div className="flex min-h-0 flex-col gap-6 overflow-y-auto p-6 pr-12">
-          <h2 className="text-lg font-heading">{SECTION_LABELS[dialog.section]}</h2>
+          <h2 className="font-heading text-lg font-semibold">{SECTION_LABELS[dialog.section]}</h2>
           {dialog.section === 'general' && <GeneralSection language={language} />}
           {dialog.section === 'about' && <AboutSection />}
         </div>
@@ -123,7 +123,7 @@ function AboutSection(): React.JSX.Element {
         <dd>{info?.whisperVersion ?? '…'}</dd>
       </dl>
       <div>
-        <Button variant="neutral" onClick={showDataFolder}>
+        <Button variant="outline" onClick={showDataFolder}>
           {IS_MAC ? "Veri klasörünü Finder'da göster" : 'Veri klasörünü aç'}
         </Button>
       </div>

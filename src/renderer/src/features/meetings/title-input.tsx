@@ -41,7 +41,7 @@ export function TitleInput({
     <Input
       autoFocus
       aria-label="Meeting adı"
-      className={cn('font-heading', className)}
+      className={cn('font-heading font-semibold', className)}
       value={draft}
       maxLength={TITLE_MAX_LENGTH}
       placeholder={placeholder}

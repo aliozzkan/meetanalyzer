@@ -71,7 +71,7 @@ export function RecordingControls({ recorder, meetingId }: Props): React.JSX.Ele
               <Button size="sm" onClick={() => void window.api.recordings.openMicrophoneSettings()}>
                 Sistem Ayarları&apos;nı aç
               </Button>
-              <Button size="sm" variant="neutral" onClick={start} disabled={busy}>
+              <Button size="sm" variant="outline" onClick={start} disabled={busy}>
                 Tekrar dene
               </Button>
             </div>

@@ -54,7 +54,7 @@ export function ModelCard({ model, forceAsk = false, onSkip }: Props): React.JSX
                 ? 'Doğrulanıyor…'
                 : `%${percent} · ${megabytes(state.receivedBytes)} / ${megabytes(state.totalBytes)}`}
             </span>
-            <Button size="sm" variant="neutral" onClick={model.cancel}>
+            <Button size="sm" variant="outline" onClick={model.cancel}>
               İptal
             </Button>
           </div>
@@ -110,7 +110,7 @@ export function ModelCard({ model, forceAsk = false, onSkip }: Props): React.JSX
             <DownloadIcon /> İndir
           </Button>
           <Button
-            variant="neutral"
+            variant="outline"
             onClick={() => {
               try {
                 localStorage.setItem(DISMISSED_KEY, '1')

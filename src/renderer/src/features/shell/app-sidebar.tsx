@@ -49,7 +49,7 @@ export function AppSidebar({
       >
         <NavLink
           to={paths.home}
-          className="app-no-drag font-heading group-data-[collapsible=icon]:hidden"
+          className="app-no-drag font-heading font-semibold group-data-[collapsible=icon]:hidden"
         >
           Meetanalyzing
         </NavLink>

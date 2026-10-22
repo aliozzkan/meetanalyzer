@@ -1,21 +1,18 @@
-/* eslint-disable react-refresh/only-export-components */
+import * as React from 'react'
 import { mergeProps } from '@base-ui/react/merge-props'
 import { useRender } from '@base-ui/react/use-render'
 import { cva, type VariantProps } from 'class-variance-authority'
-
-import * as React from 'react'
-
-import { cn } from '@renderer/lib/utils'
+import { cn } from 'cn'
 
 const markerVariants = cva(
-  "group/marker relative flex min-h-4 w-full items-center gap-2 text-left text-sm font-base text-foreground [&_svg:not([class*='size-'])]:size-4 [a]:underline [a]:underline-offset-3 [a]:hover:text-foreground",
+  "group/marker relative flex min-h-4 w-full items-center gap-2 text-left text-sm text-muted-foreground [&_svg:not([class*='size-'])]:size-4 [a]:underline [a]:underline-offset-3 [a]:hover:text-foreground",
   {
     variants: {
       variant: {
         default: '',
         separator:
-          'before:mr-0 before:h-0.5 before:min-w-0 before:flex-1 before:bg-border after:ml-0 after:h-0.5 after:min-w-0 after:flex-1 after:bg-border',
-        border: 'border-b-2 border-border pb-2'
+          'before:mr-1 before:h-px before:min-w-0 before:flex-1 before:bg-border after:ml-1 after:h-px after:min-w-0 after:flex-1 after:bg-border',
+        border: 'border-b border-border pb-2'
       }
     }
   }
@@ -26,7 +23,7 @@ function Marker({
   variant = 'default',
   render,
   ...props
-}: useRender.ComponentProps<'div'> & VariantProps<typeof markerVariants>): React.JSX.Element {
+}: useRender.ComponentProps<'div'> & VariantProps<typeof markerVariants>) {
   return useRender({
     defaultTagName: 'div',
     props: mergeProps<'div'>(
@@ -43,7 +40,7 @@ function Marker({
   })
 }
 
-function MarkerIcon({ className, ...props }: React.ComponentProps<'span'>): React.JSX.Element {
+function MarkerIcon({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <span
       data-slot="marker-icon"
@@ -54,7 +51,7 @@ function MarkerIcon({ className, ...props }: React.ComponentProps<'span'>): Reac
   )
 }
 
-function MarkerContent({ className, ...props }: React.ComponentProps<'span'>): React.JSX.Element {
+function MarkerContent({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <span
       data-slot="marker-content"

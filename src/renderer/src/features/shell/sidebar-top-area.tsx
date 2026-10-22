@@ -45,7 +45,7 @@ export function SidebarTopArea({
               <SidebarMenuButton
                 tooltip="Yeni Meeting"
                 onClick={() => onStart(defaultLanguage)}
-                className="border-2 border-border bg-main text-main-foreground"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
               >
                 <Plus />
                 <span>Yeni Meeting</span>
@@ -74,7 +74,7 @@ export function SidebarTopArea({
             <SidebarMenuButton
               tooltip="Açık Meeting'e dön"
               onClick={() => onOpen(state.meetingId)}
-              className="border-2 border-border"
+              className="border border-sidebar-border"
             >
               <CornerUpLeft />
               <span>Açık Meeting&apos;e dön</span>
@@ -86,7 +86,7 @@ export function SidebarTopArea({
               <SidebarMenuButton
                 tooltip={`Kayıt sürüyor · ${formatElapsed(state.elapsedMs)}`}
                 onClick={() => onOpen(state.meetingId)}
-                className="border-2 border-border bg-destructive text-white hover:bg-destructive hover:text-white"
+                className="bg-destructive text-white hover:bg-destructive hover:text-white"
               >
                 <span className="grid size-4 shrink-0 place-items-center" aria-hidden>
                   <span className="size-2.5 animate-pulse rounded-full bg-white" />

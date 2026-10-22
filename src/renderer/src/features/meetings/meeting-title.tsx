@@ -28,11 +28,11 @@ export function MeetingTitle({ meeting, onRename }: Props): React.JSX.Element {
   }
 
   return (
-    <h2 className="text-xl font-heading">
+    <h2 className="font-heading text-xl font-semibold">
       <button
         type="button"
         title="Yeniden adlandır"
-        className="group flex max-w-full items-center gap-2 rounded-base text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+        className="group flex max-w-full items-center gap-2 rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         onClick={() => setEditing(true)}
       >
         <span className={meeting.title ? 'truncate' : 'truncate text-foreground/50'}>

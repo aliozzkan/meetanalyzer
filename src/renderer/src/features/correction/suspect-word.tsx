@@ -59,8 +59,8 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
       <PopoverTrigger
         title={isCorrected ? `Orijinal: ${word.text}` : 'Şüpheli kelime: düzeltmek için tıkla'}
         className={cn(
-          'cursor-pointer rounded-base px-0.5 underline decoration-dotted underline-offset-4',
-          isCorrected ? 'bg-main/20' : 'bg-yellow-200 text-black'
+          'cursor-pointer rounded-sm px-0.5 underline decoration-dotted underline-offset-4',
+          isCorrected ? 'bg-primary/20' : 'bg-yellow-200 text-black'
         )}
       >
         {display.kind === 'deleted' ? <s>{display.text}</s> : display.text}
@@ -87,7 +87,7 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
             <Button
               type="button"
               size="sm"
-              variant="neutral"
+              variant="outline"
               onClick={() => void playWordAudio(word.id)}
             >
               <Volume2Icon /> Tekrar çal
@@ -99,7 +99,7 @@ export function SuspectWord({ word, onCorrect, onRevert }: Props): React.JSX.Ele
               <Button
                 type="button"
                 size="sm"
-                variant="neutral"
+                variant="outline"
                 onClick={async () => {
                   if (await onRevert(word.id)) close()
                 }}
