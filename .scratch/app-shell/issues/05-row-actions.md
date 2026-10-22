@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: ready-for-human
 Blocked by: 01, 04
 
 # Sidebar satır aksiyonları
@@ -29,3 +29,12 @@ Spec: [../spec.md](../spec.md) → "Sidebar > Meeting listesi"
 - **Ortak parçalar:** Inline Title input'u `TitleInput`'a çıktı (04'teki kurallar: Enter/odaktan çıkınca kaydet, Esc vazgeç, değişmeyen ad IPC'ye gitmez); detay başlığı ve satır kullanır. Menü etiketleri `labels.ts`'te.
 - **Ticket'ta yazmayan küçük kararlar:** Menü öğelerinde ikon; hover'da ya da menü açıkken satırdaki tarih "⋯"a yer açmak için gizlenir. Sağ tık menüsünün kendi klavye kısayolu (Shift+F10) yok; klavye erişimi "⋯" üzerinden.
 - **Bilerek bırakılan:** Detaydaki düğme etiketleri ("Meeting'i kapat", "Transcribe") menüdekilerden ("Kapat", "Metne dök") farklı; detay ekranının yeniden tasarımı spec dışında. Sidebar satırının sağında tarih (`d MMM`) var, spec "soluk saat" diyor; 01'den kalan fark, 05'te değiştirilmedi.
+
+**2026-10-22 (app-shell gözden geçirmesi):** Kod tamam; gerçek Electron'da elle denenene kadar `ready-for-human`. Denenecekler:
+
+- [ ] Kayıt alınırken sidebar'dan Recording'deki Meeting'i sil: onay istenir, kayıt düzgünce biter, açıksa Home'a dönülür.
+- [ ] Kayıt sürerken o Meeting'in menüsünde Kapat devre dışı.
+- [ ] Menüden Yeniden adlandır: animasyonlar açıkken input odaklı açılır.
+- [ ] Yeni header (`af13cf8`) sonrası sağ tık ve "⋯" menüsü ile satır içi rename hâlâ çalışıyor.
+
+Hepsi geçince üçüncü kabul kriteri işaretlenip `resolved` yapılır.
