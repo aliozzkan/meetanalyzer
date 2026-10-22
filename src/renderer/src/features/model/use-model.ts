@@ -8,8 +8,8 @@ export interface ModelApi {
   /** İndirmeyi başlatır ya da kaldığı yerden sürdürür (yalnızca kullanıcı isteğiyle çağrılmalı). */
   start: () => void
   cancel: () => void
-  /** Modeli siler; reddedilirse nedeni toast'ta gösterilir. Başarılıysa true. */
-  remove: () => Promise<boolean>
+  /** Modeli siler; reddedilirse nedeni toast'ta gösterilir. */
+  remove: () => Promise<void>
   /** Model dosyasını Finder'da (macOS dışında klasörde) gösterir. */
   showInFolder: () => void
 }
@@ -42,14 +42,13 @@ export function useModel(): ModelApi {
     void window.api.model.cancel()
   }, [])
 
-  const remove = useCallback(async (): Promise<boolean> => {
+  const remove = useCallback(async (): Promise<void> => {
     const result = await window.api.model.remove()
     if (!result.ok) {
       toast.error(result.message)
-      return false
+      return
     }
     setState(result.value)
-    return true
   }, [])
   const showInFolder = useCallback(() => {
     void window.api.model.showInFolder().then((error) => {

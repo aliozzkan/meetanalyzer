@@ -3,7 +3,7 @@ import type { ModelState } from '@shared/model'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { cn } from '@renderer/lib/utils'
-import { modelIndicator } from './model-status'
+import { modelIndicatorState } from './model-status'
 
 interface Props {
   state: ModelState | null
@@ -13,7 +13,7 @@ interface Props {
 
 // Header'ın sağındaki model göstergesi: sidebar daralsa da görünür; model hazırken hiç render edilmez.
 export function HeaderModelIndicator({ state, onOpen }: Props): React.JSX.Element | null {
-  const indicator = modelIndicator(state)
+  const indicator = modelIndicatorState(state)
   if (!indicator) return null
 
   return (

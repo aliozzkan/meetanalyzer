@@ -31,3 +31,7 @@ export const MODEL_REMOVE_BLOCKED: Record<
   'download-in-progress': 'İndirme sürerken model silinemez.',
   'in-use': 'Metne dökme sürerken ya da sırada Meeting varken model silinemez.'
 }
+
+/** Diskte silinecek bir şey yokken renderer'ın devre dışı silme butonunda gösterdiği neden (main'de
+ * bu durumda silme reddedilmez, etkisizdir). */
+export const MODEL_NOTHING_TO_REMOVE = 'Silinecek model yok.'

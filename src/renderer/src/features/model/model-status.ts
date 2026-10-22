@@ -1,4 +1,4 @@
-import { MODEL_REMOVE_BLOCKED, type ModelState } from '@shared/model'
+import { MODEL_NOTHING_TO_REMOVE, MODEL_REMOVE_BLOCKED, type ModelState } from '@shared/model'
 import { hasPendingTranscription, type TranscriptionStatus } from '@shared/transcription'
 
 // Transcription modelinin durumundan türeyen, arayüzün birden çok yerinde (ModelCard, header göstergesi,
@@ -20,7 +20,7 @@ export type ModelIndicator =
   { kind: 'missing' } | { kind: 'downloading'; percent: number } | { kind: 'error' }
 
 /** Model hazırsa (ya da durum henüz okunmadıysa) gösterge hiç yer kaplamaz: null. */
-export function modelIndicator(state: ModelState | null): ModelIndicator | null {
+export function modelIndicatorState(state: ModelState | null): ModelIndicator | null {
   switch (state?.status) {
     case 'missing':
       return { kind: 'missing' }
@@ -36,6 +36,24 @@ export function modelIndicator(state: ModelState | null): ModelIndicator | null 
   }
 }
 
+/** Ayarlar > Transcription Modeli'nde modelin adının yanındaki durum metni. */
+export function modelStatusLabel(state: ModelState): string {
+  switch (state.status) {
+    case 'ready':
+      return 'Hazır'
+    case 'missing':
+      return state.partialBytes > 0
+        ? `Yarım kaldı (${megabytes(state.partialBytes)})`
+        : 'İndirilmedi'
+    case 'downloading':
+      return state.receivedBytes >= state.totalBytes
+        ? 'Doğrulanıyor…'
+        : `İndiriliyor · %${downloadPercent(state.receivedBytes, state.totalBytes)}`
+    case 'error':
+      return 'İndirme başarısız'
+  }
+}
+
 /** Silme butonu devre dışıysa nedeni (tooltip), değilse null. Main aynı kuralı ayrıca uygular. */
 export function removeBlockReason(
   state: ModelState,
@@ -43,6 +61,6 @@ export function removeBlockReason(
 ): string | null {
   if (state.status === 'downloading') return MODEL_REMOVE_BLOCKED['download-in-progress']
   if (hasPendingTranscription(transcription)) return MODEL_REMOVE_BLOCKED['in-use']
-  if (state.status === 'missing' && state.partialBytes === 0) return 'Silinecek model yok.'
+  if (state.status === 'missing' && state.partialBytes === 0) return MODEL_NOTHING_TO_REMOVE
   return null
 }

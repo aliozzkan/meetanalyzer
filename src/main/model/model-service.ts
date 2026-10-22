@@ -1,4 +1,5 @@
 import { existsSync, rmSync, statSync } from 'node:fs'
+import { dirname } from 'node:path'
 import {
   MODEL_REMOVE_BLOCKED,
   type ModelRemoveErrorCode,
@@ -6,13 +7,13 @@ import {
 } from '../../shared/model'
 import { ModelDownloadError, type DownloadProgress } from './model-downloader'
 
-export class ModelError extends Error {
+export class ModelRemoveError extends Error {
   constructor(
     readonly code: ModelRemoveErrorCode,
     message: string
   ) {
     super(message)
-    this.name = 'ModelError'
+    this.name = 'ModelRemoveError'
   }
 }
 
@@ -36,10 +37,14 @@ export interface ModelService {
   start: () => Promise<void>
   /** Sürmekte olan indirmeyi durdurur; yarım dosya korunur. */
   cancel: () => void
-  /** Model dosyasını ve yarım indirmeyi siler; durum `missing` olur. İndirme sürerken ya da model
-   * kullanımdayken `ModelError` fırlatır. */
+  /** Model dosyasını ve yarım indirmeyi siler; durum `missing` olur (silme yarıda kalırsa diskte kalanı
+   * yansıtır ve hata fırlar). İndirme sürerken ya da model kullanımdayken `ModelRemoveError` fırlatır. */
   remove: () => void
+  /** Dosya yöneticisinde gösterilecek yer: model dosyası varsa kendisi, yoksa bulunduğu klasör. */
+  location: () => ModelLocation
 }
+
+export type ModelLocation = { kind: 'file' | 'folder'; path: string }
 
 // Modelin kurulu olup olmadığı ve indirme durumu. İndirme yalnızca `start` ile, kullanıcı isteğiyle başlar.
 export function createModelService({
@@ -130,16 +135,29 @@ export function createModelService({
   function remove(): void {
     // İptal edilen indirme de tam çözülene kadar sürüyor sayılır: .part'a hâlâ yazıyor olabilir.
     if (running) {
-      throw new ModelError('download-in-progress', MODEL_REMOVE_BLOCKED['download-in-progress'])
+      throw new ModelRemoveError(
+        'download-in-progress',
+        MODEL_REMOVE_BLOCKED['download-in-progress']
+      )
     }
     // Çalışan whisper modeli okuyor; bekleyen Meeting'ler de onu kullanacak.
     if (isInUse()) {
-      throw new ModelError('in-use', MODEL_REMOVE_BLOCKED['in-use'])
+      throw new ModelRemoveError('in-use', MODEL_REMOVE_BLOCKED['in-use'])
     }
-    rmSync(modelPath, { force: true })
-    rmSync(partPath, { force: true })
-    setState({ status: 'missing', partialBytes: 0 })
+    try {
+      rmSync(modelPath, { force: true })
+      rmSync(partPath, { force: true })
+    } finally {
+      // Silmelerden biri başarısız olsa da durum diskte kalanı yansıtır; hata yukarı iletilir.
+      setState(stateOnDisk())
+    }
   }
 
-  return { getState: () => state, start, cancel, remove }
+  function location(): ModelLocation {
+    return existsSync(modelPath)
+      ? { kind: 'file', path: modelPath }
+      : { kind: 'folder', path: dirname(modelPath) }
+  }
+
+  return { getState: () => state, start, cancel, remove, location }
 }

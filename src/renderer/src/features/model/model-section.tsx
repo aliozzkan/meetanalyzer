@@ -16,7 +16,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { IS_MAC } from '@renderer/lib/platform'
-import { downloadPercent, megabytes, removeBlockReason } from './model-status'
+import { downloadPercent, megabytes, modelStatusLabel, removeBlockReason } from './model-status'
 import type { ModelApi } from './use-model'
 
 interface Props {
@@ -36,7 +36,7 @@ export function ModelSection({ model, transcription }: Props): React.JSX.Element
           <div className="min-w-0">
             <p className="truncate font-medium">{TRANSCRIPTION_MODEL_INFO.displayName}</p>
             <p className="text-sm text-muted-foreground">
-              {megabytes(TRANSCRIPTION_MODEL_INFO.sizeBytes)} · {statusLabel(state)}
+              {megabytes(TRANSCRIPTION_MODEL_INFO.sizeBytes)} · {modelStatusLabel(state)}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -57,23 +57,6 @@ export function ModelSection({ model, transcription }: Props): React.JSX.Element
       </li>
     </ul>
   )
-}
-
-function statusLabel(state: ModelState): string {
-  switch (state.status) {
-    case 'ready':
-      return 'Hazır'
-    case 'missing':
-      return state.partialBytes > 0
-        ? `Yarım kaldı (${megabytes(state.partialBytes)})`
-        : 'İndirilmedi'
-    case 'downloading':
-      return state.receivedBytes >= state.totalBytes
-        ? 'Doğrulanıyor…'
-        : `İndiriliyor · %${downloadPercent(state.receivedBytes, state.totalBytes)}`
-    case 'error':
-      return 'İndirme başarısız'
-  }
 }
 
 // Duruma göre indir / sürdür / iptal / yeniden dene; hazır modelde eylem yok.

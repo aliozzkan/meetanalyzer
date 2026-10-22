@@ -144,7 +144,7 @@ app.whenReady().then(() => {
     // Kuyruk modele bağlı kurulduğu için ona burada geç bağlanılır (kuyruk yoksa model kullanımda değildir).
     isInUse: () => (transcriptions ? hasPendingTranscription(transcriptions.getStatus()) : false)
   })
-  registerModelIpc(model, { modelPath: getModelPath(modelsDir) })
+  registerModelIpc(model)
 
   const whisperPaths = getWhisperPaths({
     isPackaged: app.isPackaged,

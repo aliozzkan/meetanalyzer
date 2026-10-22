@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { ModelState } from '../../shared/model'
 import { ModelDownloadError } from './model-downloader'
@@ -233,7 +233,7 @@ describe('Model silme', () => {
     writeFileSync(`${modelPath}.part`, Buffer.alloc(400))
 
     expect(() => service.remove()).toThrow(
-      expect.objectContaining({ name: 'ModelError', code: 'download-in-progress' })
+      expect.objectContaining({ name: 'ModelRemoveError', code: 'download-in-progress' })
     )
     expect(existsSync(`${modelPath}.part`)).toBe(true)
     expect(service.getState().status).toBe('downloading')
@@ -256,6 +256,23 @@ describe('Model silme', () => {
     expect(service.getState()).toEqual({ status: 'missing', partialBytes: 0 })
   })
 
+  it('silme yarıda kalırsa hata fırlar ve durum diskteki hâli yansıtır', () => {
+    const { modelPath } = setup()
+    writeFileSync(modelPath, Buffer.alloc(EXPECTED_SIZE))
+    // Yarım indirme yolunda boş olmayan bir klasör: model dosyası silinir, ikinci silme başarısız olur.
+    mkdirSync(`${modelPath}.part`)
+    writeFileSync(join(`${modelPath}.part`, 'x'), 'x')
+    const states: ModelState[] = []
+    const service = createFresh(modelPath, { onState: (state) => states.push(state) })
+    expect(service.getState()).toEqual({ status: 'ready' })
+
+    expect(() => service.remove()).toThrow()
+
+    expect(existsSync(modelPath)).toBe(false)
+    expect(service.getState().status).toBe('missing')
+    expect(states.map((state) => state.status)).toEqual(['missing'])
+  })
+
   it('model kullanımdayken (Transcription Queue dolu) silme reddedilir; kuyruk boşalınca silinir', () => {
     const { modelPath } = setup()
     writeFileSync(modelPath, Buffer.alloc(EXPECTED_SIZE))
@@ -269,6 +286,16 @@ describe('Model silme', () => {
     inUse = false
     service.remove()
     expect(existsSync(modelPath)).toBe(false)
+  })
+})
+
+describe('Modelin konumu', () => {
+  it('model dosyası varsa dosyanın kendisi, yoksa bulunduğu klasör gösterilir', () => {
+    const { service, modelPath } = setup()
+    expect(service.location()).toEqual({ kind: 'folder', path: dirname(modelPath) })
+
+    writeFileSync(modelPath, Buffer.alloc(EXPECTED_SIZE))
+    expect(service.location()).toEqual({ kind: 'file', path: modelPath })
   })
 })
 

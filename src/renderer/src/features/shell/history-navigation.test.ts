@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { historyAvailability } from './history-navigation'
+import { appEntryCount, historyAvailability } from './history-navigation'
 
 // `state`, react-router'ın hash history'sinin `window.history.state`'e yazdığı kayıttır ({ usr, key, idx }).
 describe('geri/ileri okları', () => {
@@ -33,5 +33,26 @@ describe('geri/ileri okları', () => {
 
   it('router henüz konumunu yazmadıysa iki ok da kapalıdır', () => {
     expect(historyAvailability(null, 2)).toEqual({ canGoBack: false, canGoForward: false })
+  })
+})
+
+// Electron penceresinin geçmişinde uygulamadan önce girişler olabilir (ör. ilk yükleme); oklar yalnızca
+// uygulamanın girişlerini saymalı.
+describe('uygulamanın geçmiş girişi sayısı', () => {
+  it('router sırası kadar geride, Navigation API konumu kadar ileride giriş sayılır', () => {
+    // 4 girişin ilki uygulamadan önce; uygulamada 2. ekrandayız, 1 ileri giriş var.
+    expect(appEntryCount({ idx: 1 }, 4, { entryCount: 4, currentIndex: 2 })).toBe(3)
+  })
+
+  it('ileri giriş yoksa sayı router sırasının bir fazlasıdır', () => {
+    expect(appEntryCount({ idx: 2 }, 5, { entryCount: 5, currentIndex: 4 })).toBe(3)
+  })
+
+  it('Navigation API yoksa tarayıcının geçmiş uzunluğu kullanılır', () => {
+    expect(appEntryCount({ idx: 1 }, 4, null)).toBe(4)
+  })
+
+  it('router henüz konumunu yazmadıysa tarayıcının geçmiş uzunluğu kullanılır', () => {
+    expect(appEntryCount(null, 4, { entryCount: 4, currentIndex: 3 })).toBe(4)
   })
 })

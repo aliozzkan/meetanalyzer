@@ -72,7 +72,7 @@ export function AppLayout(): React.JSX.Element {
         <AppHeader
           history={history}
           fullScreen={fullScreen}
-          center={
+          openMeeting={
             <OpenMeetingPill
               status={status}
               onOpen={(id) => void navigate(paths.meeting(id))}

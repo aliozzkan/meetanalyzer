@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { TranscriptionStatus } from '@shared/transcription'
-import { downloadPercent, modelIndicator, removeBlockReason } from './model-status'
+import {
+  downloadPercent,
+  modelIndicatorState,
+  modelStatusLabel,
+  removeBlockReason
+} from './model-status'
 
 describe('indirme yüzdesi (ModelCard, header göstergesi, Ayarlar)', () => {
   it("tam sayıya yuvarlanır ve 100'ü geçmez", () => {
@@ -18,25 +23,55 @@ describe('indirme yüzdesi (ModelCard, header göstergesi, Ayarlar)', () => {
 
 describe('header model göstergesi', () => {
   it('model hazırken ya da durum henüz okunmamışken hiç gösterilmez', () => {
-    expect(modelIndicator({ status: 'ready' })).toBeNull()
-    expect(modelIndicator(null)).toBeNull()
+    expect(modelIndicatorState({ status: 'ready' })).toBeNull()
+    expect(modelIndicatorState(null)).toBeNull()
   })
 
   it('model eksikse (yarım indirme olsa da) "Model indirilmedi" gösterilir', () => {
-    expect(modelIndicator({ status: 'missing', partialBytes: 0 })).toEqual({ kind: 'missing' })
-    expect(modelIndicator({ status: 'missing', partialBytes: 300 })).toEqual({ kind: 'missing' })
+    expect(modelIndicatorState({ status: 'missing', partialBytes: 0 })).toEqual({ kind: 'missing' })
+    expect(modelIndicatorState({ status: 'missing', partialBytes: 300 })).toEqual({
+      kind: 'missing'
+    })
   })
 
   it('indirme sürerken yüzde gösterilir', () => {
     expect(
-      modelIndicator({ status: 'downloading', receivedBytes: 250, totalBytes: 1_000 })
+      modelIndicatorState({ status: 'downloading', receivedBytes: 250, totalBytes: 1_000 })
     ).toEqual({ kind: 'downloading', percent: 25 })
   })
 
   it('indirme başarısızsa hata gösterilir', () => {
     expect(
-      modelIndicator({ status: 'error', code: 'network', message: 'koptu', partialBytes: 10 })
+      modelIndicatorState({ status: 'error', code: 'network', message: 'koptu', partialBytes: 10 })
     ).toEqual({ kind: 'error' })
+  })
+})
+
+describe('Ayarlar > Transcription Modeli durum etiketi', () => {
+  it('hazır model "Hazır", hiç indirilmemiş model "İndirilmedi" görünür', () => {
+    expect(modelStatusLabel({ status: 'ready' })).toBe('Hazır')
+    expect(modelStatusLabel({ status: 'missing', partialBytes: 0 })).toBe('İndirilmedi')
+  })
+
+  it('yarım kalmış indirme boyutuyla gösterilir', () => {
+    expect(modelStatusLabel({ status: 'missing', partialBytes: 120_400_000 })).toBe(
+      'Yarım kaldı (120 MB)'
+    )
+  })
+
+  it('indirme sürerken yüzde, tüm baytlar gelince doğrulama gösterilir', () => {
+    expect(modelStatusLabel({ status: 'downloading', receivedBytes: 250, totalBytes: 1_000 })).toBe(
+      'İndiriliyor · %25'
+    )
+    expect(
+      modelStatusLabel({ status: 'downloading', receivedBytes: 1_000, totalBytes: 1_000 })
+    ).toBe('Doğrulanıyor…')
+  })
+
+  it('başarısız indirme belirtilir', () => {
+    expect(
+      modelStatusLabel({ status: 'error', code: 'network', message: 'koptu', partialBytes: 0 })
+    ).toBe('İndirme başarısız')
   })
 })
 

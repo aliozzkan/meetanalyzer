@@ -13,7 +13,7 @@ interface Props {
   /** Tam ekranda trafik ışıkları kaybolur; soldaki boşluk da kalkar. */
   fullScreen: boolean
   /** Orta: açık Meeting durumu (`OpenMeetingPill`). */
-  center: React.ReactNode
+  openMeeting: React.ReactNode
   /** Sağ: model göstergesi (`HeaderModelIndicator`); model hazırken yer kaplamaz. */
   modelIndicator: React.ReactNode
   onViewPlans: () => void
@@ -25,7 +25,7 @@ interface Props {
 export function AppHeader({
   history,
   fullScreen,
-  center,
+  openMeeting,
   modelIndicator,
   onViewPlans
 }: Props): React.JSX.Element {
@@ -69,7 +69,7 @@ export function AppHeader({
         </Button>
       </div>
 
-      <div className="flex shrink-0 items-center justify-center">{center}</div>
+      <div className="flex shrink-0 items-center justify-center">{openMeeting}</div>
 
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
         {modelIndicator}

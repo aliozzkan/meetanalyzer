@@ -1,6 +1,11 @@
 import { useCallback, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { historyAvailability, type HistoryAvailability } from './history-navigation'
+import {
+  appEntryCount,
+  historyAvailability,
+  type HistoryAvailability,
+  type NavigationPosition
+} from './history-navigation'
 
 export interface HistoryNavigation extends HistoryAvailability {
   back: () => void
@@ -31,7 +36,12 @@ export function useHistoryNavigation(): HistoryNavigation {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [back, forward])
 
-  return { ...historyAvailability(window.history.state, appEntryCount()), back, forward }
+  const { state, length } = window.history
+  return {
+    ...historyAvailability(state, appEntryCount(state, length, navigationPosition())),
+    back,
+    forward
+  }
 }
 
 interface NavigationApi {
@@ -39,12 +49,9 @@ interface NavigationApi {
   currentEntry: { index: number } | null
 }
 
-// `history.length` uygulamadan önceki girişleri de sayar. Uygulamanın girişleri: router'ın sırası (`idx`) kadar
-// geride, Navigation API'nin gösterdiği kadar ileride. Navigation API TypeScript'in DOM tiplerinde henüz yok.
-function appEntryCount(): number {
+// Navigation API TypeScript'in DOM tiplerinde henüz yok.
+function navigationPosition(): NavigationPosition | null {
   const navigation = (window as { navigation?: NavigationApi }).navigation
-  const idx = (window.history.state as { idx?: unknown } | null)?.idx
-  if (!navigation?.currentEntry || typeof idx !== 'number') return window.history.length
-  const ahead = navigation.entries().length - 1 - navigation.currentEntry.index
-  return idx + 1 + ahead
+  if (!navigation?.currentEntry) return null
+  return { entryCount: navigation.entries().length, currentIndex: navigation.currentEntry.index }
 }
