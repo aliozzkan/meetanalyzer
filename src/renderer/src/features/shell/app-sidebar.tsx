@@ -38,11 +38,14 @@ export function AppSidebar({
   top
 }: Props): React.JSX.Element {
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible="icon"
+      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
+    >
       {/* macOS'ta trafik ışıkları sidebar'ın üstüne oturur; başlık alanı pencere sürükleme alanıdır. */}
       <SidebarHeader
         className={cn(
-          'app-drag flex-row items-center justify-between',
+          'flex-row items-center justify-between',
           IS_MAC && 'pt-10',
           'group-data-[collapsible=icon]:justify-center'
         )}

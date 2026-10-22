@@ -20,6 +20,8 @@ import { IS_MAC } from '../lib/platform'
 import { cn } from '../lib/utils'
 import type { AppContext } from './app-context'
 import { paths } from './paths'
+import { DotPattern } from '@renderer/components/ui/dot-pattern'
+import { RainbowButton } from '@renderer/components/ui/rainbow-button'
 
 // Uygulama kabuğu: rota değişse de yaşayan durum (Meeting listesi, model, Transcription, Recorder) burada
 // tutulur. Recorder'ın burada olması, ekranlar arası gezinmenin Recording'i durdurmamasını sağlar.
@@ -55,40 +57,60 @@ export function AppLayout(): React.JSX.Element {
   }
 
   return (
-    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <AppSidebar
-        meetings={meetings}
-        transcription={transcription}
-        // Açık Meeting silinirse MeetingPage Home'a yönlendirir.
-        meetingCommands={{
-          rename: meetings.rename,
-          close: (id) => void meetings.close(id),
-          transcribe: transcription.transcribe,
-          remove: (id) => void removeMeeting(id),
-          hasActiveRecording: (id) => isBusyWith(recorder, id)
-        }}
-        onOpenSettings={() => settings.setOpen(true)}
-        top={
-          <SidebarTopArea
-            state={sidebarTopState(meetings.meetings, recorder)}
-            defaultLanguage={defaultLanguage.language}
-            onStart={(language) => void newMeeting.start(language)}
-            onOpen={(id) => void navigate(paths.meeting(id))}
-            onStop={() => void recorder.stop()}
-          />
-        }
-      />
-      <SidebarInset className="h-svh">
-        {/* macOS'ta içerik alanının üstü de pencere sürükleme alanıdır; kaydırılan içeriğin dışında kalır. */}
-        {IS_MAC && <div className="app-drag h-8 shrink-0" />}
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className={cn('mx-auto flex w-full max-w-3xl flex-col gap-6 p-6', IS_MAC && 'pt-2')}>
-            <Outlet context={context} />
+    <div className="[--header-height:calc(--spacing(11))]">
+      <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen} className="flex flex-col">
+        <header className="sticky top-0 z-50 flex w-full items-center border-b bg-background">
+          <div className="flex h-(--header-height) w-full items-center gap-2 px-4 relative">
+            <div className="app-drag absolute inset-0 w-full h-full z-0"></div>
+            <div className="w-full flex justify-end z-10">
+              <RainbowButton size="sm" variant="outline" onClick={() => void navigate('/')} className="app-no-drag">
+                Planları Görüntüle
+              </RainbowButton>
+            </div>
           </div>
+        </header>
+        <div className="flex flex-1">
+          <AppSidebar
+            meetings={meetings}
+            transcription={transcription}
+            // Açık Meeting silinirse MeetingPage Home'a yönlendirir.
+            meetingCommands={{
+              rename: meetings.rename,
+              close: (id) => void meetings.close(id),
+              transcribe: transcription.transcribe,
+              remove: (id) => void removeMeeting(id),
+              hasActiveRecording: (id) => isBusyWith(recorder, id)
+            }}
+            onOpenSettings={() => settings.setOpen(true)}
+            top={
+              <SidebarTopArea
+                state={sidebarTopState(meetings.meetings, recorder)}
+                defaultLanguage={defaultLanguage.language}
+                onStart={(language) => void newMeeting.start(language)}
+                onOpen={(id) => void navigate(paths.meeting(id))}
+                onStop={() => void recorder.stop()}
+              />
+            }
+          />
+          <SidebarInset className="h-[calc(99svh-var(--header-height))] relative">
+            <DotPattern
+              className={cn('mask-[linear-gradient(to_top,white,transparent,transparent)]')}
+            />
+            <div className="min-h-0 flex-1 overflow-y-auto pt-8 relative z-10">
+              <div
+                className={cn(
+                  'mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 z-10',
+                  IS_MAC && 'pt-2'
+                )}
+              >
+                <Outlet context={context} />
+              </div>
+            </div>
+          </SidebarInset>
         </div>
-      </SidebarInset>
-      <SettingsDialog dialog={settings} language={defaultLanguage} />
-      <Toaster />
-    </SidebarProvider>
+        <SettingsDialog dialog={settings} language={defaultLanguage} />
+        <Toaster />
+      </SidebarProvider>
+    </div>
   )
 }
