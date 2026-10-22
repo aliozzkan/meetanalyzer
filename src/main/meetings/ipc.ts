@@ -12,5 +12,8 @@ export function registerMeetingIpc(meetings: MeetingService): void {
     run(() => meetings.start(language))
   )
   ipcMain.handle('meetings:close', (_event, id: string) => run(() => meetings.close(id)))
+  ipcMain.handle('meetings:rename', (_event, id: string, title: string) =>
+    run(() => meetings.rename(id, title))
+  )
   ipcMain.handle('meetings:remove', (_event, id: string) => run(() => meetings.remove(id)))
 }

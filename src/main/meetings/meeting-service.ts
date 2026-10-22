@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Db } from '../db/database'
-import { LANGUAGES } from '../../shared/meeting'
+import { LANGUAGES, TITLE_MAX_LENGTH, normalizeTitle } from '../../shared/meeting'
 import type { Language, MeetingErrorCode, MeetingState, MeetingSummary } from '../../shared/meeting'
 
 export class MeetingError extends Error {
@@ -17,6 +17,7 @@ export class MeetingError extends Error {
 
 interface MeetingRow {
   id: string
+  title: string | null
   language: Language
   state: MeetingState
   last_error: string | null
@@ -29,6 +30,7 @@ interface MeetingRow {
 function toSummary(row: MeetingRow): MeetingSummary {
   return {
     id: row.id,
+    title: row.title,
     language: row.language,
     state: row.state,
     lastError: row.last_error,
@@ -84,6 +86,8 @@ export interface MeetingService {
   /** `lastError` yalnızca Transcribing → Closed geçişinde yazılır; Transcribing'e girerken önceki hata silinir. */
   transition: (id: string, to: MeetingState, lastError?: string) => MeetingSummary
   close: (id: string) => MeetingSummary
+  /** Title'ı kırparak yazar; boş Title'ı siler. Approved dahil her durumda çalışır. */
+  rename: (id: string, title: string) => MeetingSummary
   remove: (id: string) => void
 }
 
@@ -167,6 +171,19 @@ export function createMeetingService({
     return transition(id, 'closed')
   }
 
+  function rename(id: string, title: string): MeetingSummary {
+    get(id)
+    const normalized = normalizeTitle(title)
+    if (normalized && normalized.length > TITLE_MAX_LENGTH) {
+      throw new MeetingError(
+        'invalid-input',
+        `Meeting adı en fazla ${TITLE_MAX_LENGTH} karakter olabilir.`
+      )
+    }
+    db.prepare('UPDATE meetings SET title = ? WHERE id = ?').run(normalized, id)
+    return get(id)
+  }
+
   // Approved'dan önce her durumda silinebilir (docs/meeting-lifecycle.md → Silme).
   // Önce kayıt, sonra dosyalar: dosya silme hatası veri kaybettirmez, yalnızca artık klasör bırakır.
   function remove(id: string): void {
@@ -183,5 +200,5 @@ export function createMeetingService({
     rmSync(join(recordingsDir, id), { recursive: true, force: true })
   }
 
-  return { start, get, list, transition, close, remove }
+  return { start, get, list, transition, close, rename, remove }
 }

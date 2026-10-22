@@ -10,6 +10,7 @@ import type { Recorder } from '../recording/use-recorder'
 import { formatMeetingDate } from './format-date'
 import { LANGUAGE_LABELS, STATE_LABELS } from './labels'
 import { MeetingActions } from './meeting-actions'
+import { MeetingTitle } from './meeting-title'
 import { MeetingTranscriptionStatus } from '../transcription/transcription-status'
 import type { TranscriptionApi } from '../transcription/use-transcription'
 import type { MeetingsApi } from './use-meetings'
@@ -40,9 +41,11 @@ export function MeetingDetail({
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-xl font-heading">{formatMeetingDate(meeting.createdAt)}</h2>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <MeetingTitle meeting={meeting} onRename={api.rename} />
               <span className="text-sm">
+                {/* Title varken tarih başlıktan düştüğü için burada gösterilir. */}
+                {meeting.title && `${formatMeetingDate(meeting.createdAt)} · `}
                 {LANGUAGE_LABELS[meeting.language]} · {meeting.recordingCount} kayıt
               </span>
             </div>

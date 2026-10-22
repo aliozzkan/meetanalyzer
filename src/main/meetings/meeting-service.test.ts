@@ -269,4 +269,66 @@ describe('Meeting servisi', () => {
 
     expect(cancelled).toEqual([meeting.id])
   })
+
+  describe('Title', () => {
+    it("yeni Meeting'in Title'ı yoktur; verilen Title baştaki/sondaki boşluklardan kırpılır", () => {
+      const { meetings } = setup()
+      const meeting = meetings.start('tr')
+      expect(meeting.title).toBeNull()
+
+      const renamed = meetings.rename(meeting.id, '  Haftalık plan  ')
+
+      expect(renamed.title).toBe('Haftalık plan')
+      expect(meetings.get(meeting.id).title).toBe('Haftalık plan')
+    })
+
+    it('boş ya da yalnızca boşluktan oluşan Title kaydedilince Title silinir', () => {
+      const { meetings } = setup()
+      const meeting = meetings.start('tr')
+      meetings.rename(meeting.id, 'Haftalık plan')
+
+      expect(meetings.rename(meeting.id, '   ').title).toBeNull()
+    })
+
+    it('120 karakterlik Title kabul edilir; 121 karakterlik reddedilir ve önceki Title korunur', () => {
+      const { meetings } = setup()
+      const meeting = meetings.start('tr')
+      const longest = 'a'.repeat(120)
+
+      expect(meetings.rename(meeting.id, `  ${longest}  `).title).toBe(longest)
+      expect(() => meetings.rename(meeting.id, 'b'.repeat(121))).toThrow(
+        expect.objectContaining({ code: 'invalid-input' })
+      )
+      expect(meetings.get(meeting.id).title).toBe(longest)
+    })
+
+    it('olmayan Meeting yeniden adlandırılamaz', () => {
+      const { meetings } = setup()
+
+      expect(() => meetings.rename('yok', 'Plan')).toThrow(
+        expect.objectContaining({ code: 'not-found' })
+      )
+    })
+
+    it("Approved Meeting'in Title'ı değiştirilebilir; Approved Transcript ve onay zamanı değişmez", () => {
+      const { meetings, db } = setup()
+      const meeting = meetings.start('tr')
+      addRecording(db, meeting.id)
+      meetings.close(meeting.id)
+      for (const to of ['transcribing', 'transcribed', 'approved'] as const) {
+        meetings.transition(meeting.id, to)
+      }
+      db.prepare(
+        "INSERT INTO approved_transcripts (meeting_id, text, created_at) VALUES (?, 'onaylı metin', 1)"
+      ).run(meeting.id)
+      const approved = meetings.get(meeting.id)
+
+      const renamed = meetings.rename(meeting.id, 'Müşteri görüşmesi')
+
+      expect(renamed).toEqual({ ...approved, title: 'Müşteri görüşmesi' })
+      expect(db.prepare('SELECT text FROM approved_transcripts').all()).toEqual([
+        { text: 'onaylı metin' }
+      ])
+    })
+  })
 })

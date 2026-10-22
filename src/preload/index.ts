@@ -16,6 +16,8 @@ const api = {
       ipcRenderer.invoke('meetings:start', language),
     close: (id: string): Promise<MeetingResult<MeetingSummary>> =>
       ipcRenderer.invoke('meetings:close', id),
+    rename: (id: string, title: string): Promise<MeetingResult<MeetingSummary>> =>
+      ipcRenderer.invoke('meetings:rename', id, title),
     remove: (id: string): Promise<MeetingResult<void>> => ipcRenderer.invoke('meetings:remove', id)
   },
   recordings: {

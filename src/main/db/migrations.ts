@@ -87,5 +87,9 @@ export const migrations: string[] = [
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+  `,
+  // Meeting'in isteğe bağlı, yalnızca lokal adı (GLOSSARY → Title). Kırpma ve uzunluk servis tarafında.
+  `
+  ALTER TABLE meetings ADD COLUMN title TEXT;
   `
 ]

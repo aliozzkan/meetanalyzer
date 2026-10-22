@@ -48,6 +48,7 @@ Recording ──► Closed ──► Transcribing ──► Transcribed ──�
 - Backend'e gönderim Awaiting Analysis'e geçişten sonra durum sorgulaması (polling) ile izlenir; tamamlandı yanıtı gelince sonuç ayrıca çekilir.
 - Backend, Awaiting Analysis, Analysis Errored ve Completed durumlarının kaynağıdır. Send Failed istek hiç ulaşmadığı için yalnızca lokalde bulunur.
 - Sayfa yenilenirse ya da uygulama yeniden açılırsa backend'den Awaiting Analysis'teki Meeting'ler çekilir ve bunlar için polling yeniden başlatılır.
+- Meeting'in Title'ı Analysis Request payload'ına girmez; yalnızca lokaldir (müşteri/proje adı içerebilir). Bkz. GLOSSARY → Title.
 
 ## Açık noktalar
 

@@ -13,6 +13,7 @@ import {
 import { paths } from '../../app/paths'
 import type { TranscriptionStatus } from '@shared/transcription'
 import { groupMeetingsByDate } from './group-meetings'
+import { meetingLabel } from './meeting-label'
 import { MeetingStatusIcon } from './meeting-status-icon'
 import { useNow } from './use-now'
 
@@ -22,7 +23,7 @@ interface Props {
   transcription: TranscriptionStatus
 }
 
-// Meeting'ler tarih gruplarıyla listelenir. Title gelene kadar (issue 04) satır adı saatten türetilir.
+// Meeting'ler tarih gruplarıyla listelenir; satır adı Title, yoksa Meeting'in saatidir.
 export function MeetingNav({ meetings, loaded, transcription }: Props): React.JSX.Element {
   const now = useNow()
   const match = useMatch(paths.meetingPattern)
@@ -44,7 +45,7 @@ export function MeetingNav({ meetings, loaded, transcription }: Props): React.JS
           <SidebarGroupContent>
             <SidebarMenu>
               {group.meetings.map((meeting) => {
-                const label = `${format(meeting.createdAt, 'HH:mm')} Meeting'i`
+                const label = meetingLabel(meeting)
                 return (
                   <SidebarMenuItem key={meeting.id}>
                     <SidebarMenuButton

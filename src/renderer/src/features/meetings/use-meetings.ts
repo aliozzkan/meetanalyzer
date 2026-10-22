@@ -8,6 +8,8 @@ export interface MeetingsApi {
   refresh: () => Promise<void>
   start: (language: Language) => Promise<MeetingSummary | undefined>
   close: (id: string) => Promise<void>
+  /** Başarılıysa true; hata kullanıcıya bildirilir. */
+  rename: (id: string, title: string) => Promise<boolean>
   remove: (id: string) => Promise<boolean>
 }
 
@@ -55,6 +57,7 @@ export function useMeetings(): MeetingsApi {
     close: async (id) => {
       await act(window.api.meetings.close(id))
     },
+    rename: async (id, title) => (await act(window.api.meetings.rename(id, title))).ok,
     remove: async (id) => (await act(window.api.meetings.remove(id))).ok
   }
 }

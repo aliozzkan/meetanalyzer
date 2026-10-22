@@ -19,8 +19,19 @@ export const MEETING_STATES = [
 ] as const
 export type MeetingState = (typeof MEETING_STATES)[number]
 
+// GLOSSARY → Title. Main bu sınırı zorunlu kılar; renderer yalnızca girişi sınırlamak için kullanır.
+export const TITLE_MAX_LENGTH = 120
+
+/** Saklanacak Title: kırpılmış hâli, boşsa null. Uzunluğu main ayrıca denetler. */
+export function normalizeTitle(title: string): string | null {
+  const trimmed = title.trim()
+  return trimmed === '' ? null : trimmed
+}
+
 export interface MeetingSummary {
   id: string
+  /** Kullanıcının verdiği ad; yoksa arayüz Meeting'i tarih/saatiyle gösterir. */
+  title: string | null
   language: Language
   state: MeetingState
   lastError: string | null
