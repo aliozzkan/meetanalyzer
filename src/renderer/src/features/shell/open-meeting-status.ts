@@ -2,17 +2,18 @@ import type { MeetingSummary } from '@shared/meeting'
 import { findOpenMeeting } from '../meetings/new-meeting'
 import type { RecorderSnapshot } from '../recording/recorder-controller'
 
-export type SidebarTopState =
-  | { kind: 'new-meeting' }
+export type OpenMeetingStatus =
+  | { kind: 'none' }
   | { kind: 'open-meeting'; meetingId: string }
   /** `canStop`: kayıt bitirilirken pill kalır ama yeniden durdurulamaz. */
   | { kind: 'recording'; meetingId: string; elapsedMs: number; canStop: boolean }
 
-// Sidebar'ın üst alanı üç durumdan birini gösterir (spec: "Sidebar > Üst alan").
-export function sidebarTopState(
+// Açık Meeting durumu (spec: "Header > Orta", "Sidebar > Üst alan"): header'ın ortası pill'i, sidebar'ın üst
+// alanı "Yeni Meeting" split button'unu buna göre gösterir. Açık Meeting yokken header boş, split button görünür.
+export function openMeetingStatus(
   meetings: Pick<MeetingSummary, 'id' | 'state'>[],
   recorder: Pick<RecorderSnapshot, 'state' | 'meetingId' | 'elapsedMs'>
-): SidebarTopState {
+): OpenMeetingStatus {
   // Başlatma sürerken (ör. mikrofon izni beklenirken) kayıt henüz yoktur; izin reddedilirse hiç olmayabilir.
   if ((recorder.state === 'recording' || recorder.state === 'stopping') && recorder.meetingId) {
     return {
@@ -23,5 +24,5 @@ export function sidebarTopState(
     }
   }
   const open = findOpenMeeting(meetings)
-  return open ? { kind: 'open-meeting', meetingId: open.id } : { kind: 'new-meeting' }
+  return open ? { kind: 'open-meeting', meetingId: open.id } : { kind: 'none' }
 }

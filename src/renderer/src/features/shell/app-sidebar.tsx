@@ -1,18 +1,12 @@
 import { Settings } from 'lucide-react'
-import { NavLink } from 'react-router'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarTrigger
+  SidebarMenuItem
 } from '@renderer/components/ui/sidebar'
-import { cn } from '@renderer/lib/utils'
-import { IS_MAC } from '@renderer/lib/platform'
-import { paths } from '../../app/paths'
 import { MeetingNav } from '../meetings/meeting-nav'
 import type { MeetingRowCommands } from '../meetings/meeting-row'
 import { ThemeMenu } from '../settings/theme-menu'
@@ -25,11 +19,11 @@ interface Props {
   /** Satır menüsündeki işlemler (Yeniden adlandır, Kapat, Metne dök, Sil). */
   meetingCommands: MeetingRowCommands
   onOpenSettings: () => void
-  /** Üst alan: Yeni Meeting split button'u ya da Recording pill'i. */
+  /** Üst alan: Yeni Meeting split button'u; Recording'de Meeting varken boş. */
   top: React.ReactNode
 }
 
-// Footer'daki model göstergesi issue 07'de gelir.
+// Uygulama adı, daralt/aç ve trafik ışığı boşluğu header'dadır; sidebar'ın kendi başlık alanı yoktur.
 export function AppSidebar({
   meetings,
   transcription,
@@ -42,22 +36,6 @@ export function AppSidebar({
       collapsible="icon"
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
     >
-      {/* macOS'ta trafik ışıkları sidebar'ın üstüne oturur; başlık alanı pencere sürükleme alanıdır. */}
-      <SidebarHeader
-        className={cn(
-          'flex-row items-center justify-between',
-          IS_MAC && 'pt-10',
-          'group-data-[collapsible=icon]:justify-center'
-        )}
-      >
-        <NavLink
-          to={paths.home}
-          className="app-no-drag font-heading font-semibold group-data-[collapsible=icon]:hidden"
-        >
-          Meetanalyzing
-        </NavLink>
-        <SidebarTrigger className="app-no-drag" />
-      </SidebarHeader>
       {top}
       <SidebarContent>
         <MeetingNav

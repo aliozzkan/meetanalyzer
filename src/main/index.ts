@@ -27,7 +27,7 @@ import { requestMicrophoneAccess } from './recordings/microphone'
 import { recoverInterruptedRecordings } from './recordings/recovery'
 import { registerRecordingIpc } from './recordings/ipc'
 import { createRecordingService, type RecordingService } from './recordings/recording-service'
-import { registerAppIpc } from './app/ipc'
+import { forwardFullScreen, registerAppIpc } from './app/ipc'
 import { registerSettingsIpc } from './settings/ipc'
 import { createSettingsService } from './settings/settings-service'
 import { installAppMenu } from './menu'
@@ -45,7 +45,7 @@ function createWindow(): void {
     minHeight: 520,
     show: false,
     autoHideMenuBar: true,
-    // macOS: trafik ışıkları sidebar'ın üstüne oturur; diğer platformlarda normal başlık çubuğu.
+    // macOS: trafik ışıkları header'ın (44 px) solundaki boşluğa oturur; diğer platformlarda normal başlık çubuğu.
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 14 } }
       : {}),
@@ -59,6 +59,7 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
+  forwardFullScreen(mainWindow)
 
   // Renderer'daki mikrofon yakalama sayfa yenilenince, pencere kapanınca ya da renderer çökünce yok olur;
   // açık kalan Recording'ler düzgünce bitirilir (macOS'ta pencere kapanınca uygulama yaşamaya devam eder).

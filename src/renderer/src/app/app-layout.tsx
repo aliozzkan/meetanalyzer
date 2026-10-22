@@ -9,11 +9,14 @@ import { useRecorder } from '../features/recording/use-recorder'
 import { SettingsDialog } from '../features/settings/settings-dialog'
 import { useDefaultLanguage } from '../features/settings/use-default-language'
 import { useSettingsDialog } from '../features/settings/use-settings-dialog'
+import { AppHeader } from '../features/shell/app-header'
 import { AppSidebar } from '../features/shell/app-sidebar'
-import { sidebarTopState } from '../features/shell/sidebar-top'
+import { OpenMeetingPill } from '../features/shell/open-meeting-pill'
+import { openMeetingStatus } from '../features/shell/open-meeting-status'
 import { SidebarTopArea } from '../features/shell/sidebar-top-area'
 import { useAppCommands } from '../features/shell/use-app-commands'
-import { useHistoryShortcuts } from '../features/shell/use-history-shortcuts'
+import { useFullScreen } from '../features/shell/use-full-screen'
+import { useHistoryNavigation } from '../features/shell/use-history-navigation'
 import { useSidebarOpen } from '../features/shell/use-sidebar-open'
 import { useTranscription } from '../features/transcription/use-transcription'
 import { IS_MAC } from '../lib/platform'
@@ -21,7 +24,6 @@ import { cn } from '../lib/utils'
 import type { AppContext } from './app-context'
 import { paths } from './paths'
 import { DotPattern } from '@renderer/components/ui/dot-pattern'
-import { RainbowButton } from '@renderer/components/ui/rainbow-button'
 
 // Uygulama kabuğu: rota değişse de yaşayan durum (Meeting listesi, model, Transcription, Recorder) burada
 // tutulur. Recorder'ın burada olması, ekranlar arası gezinmenin Recording'i durdurmamasını sağlar.
@@ -35,7 +37,9 @@ export function AppLayout(): React.JSX.Element {
   const newMeeting = useNewMeeting(meetings, defaultLanguage)
   const [sidebarOpen, setSidebarOpen] = useSidebarOpen()
   const navigate = useNavigate()
-  useHistoryShortcuts()
+  const history = useHistoryNavigation()
+  const fullScreen = useFullScreen()
+  const status = openMeetingStatus(meetings.meetings, recorder)
   useAppCommands({
     'open-settings': () => settings.setOpen(true),
     'new-meeting': newMeeting.startFromShortcut
@@ -57,19 +61,27 @@ export function AppLayout(): React.JSX.Element {
   }
 
   return (
+    // Header + içerik pencereyi tam doldurur; sayfa kaymaz, yalnızca içerik alanı kendi içinde kayar.
     <div className="[--header-height:calc(--spacing(11))]">
-      <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen} className="flex flex-col">
-        <header className="sticky top-0 z-50 flex w-full items-center border-b bg-background">
-          <div className="flex h-(--header-height) w-full items-center gap-2 px-4 relative">
-            <div className="app-drag absolute inset-0 w-full h-full z-0"></div>
-            <div className="w-full flex justify-end z-10">
-              <RainbowButton size="sm" variant="outline" onClick={() => void navigate('/')} className="app-no-drag">
-                Planları Görüntüle
-              </RainbowButton>
-            </div>
-          </div>
-        </header>
-        <div className="flex flex-1">
+      <SidebarProvider
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        className="h-svh flex-col overflow-hidden"
+      >
+        <AppHeader
+          history={history}
+          fullScreen={fullScreen}
+          center={
+            <OpenMeetingPill
+              status={status}
+              onOpen={(id) => void navigate(paths.meeting(id))}
+              onStop={() => void recorder.stop()}
+            />
+          }
+          // Planlar backlog 10'da; şimdilik yer tutucu.
+          onViewPlans={() => void navigate(paths.home)}
+        />
+        <div className="flex min-h-0 flex-1">
           <AppSidebar
             meetings={meetings}
             transcription={transcription}
@@ -82,17 +94,17 @@ export function AppLayout(): React.JSX.Element {
               hasActiveRecording: (id) => isBusyWith(recorder, id)
             }}
             onOpenSettings={() => settings.setOpen(true)}
+            // Recording'de Meeting varken yeni Meeting başlatılamaz; o Meeting'e header'daki pill'den dönülür.
             top={
-              <SidebarTopArea
-                state={sidebarTopState(meetings.meetings, recorder)}
-                defaultLanguage={defaultLanguage.language}
-                onStart={(language) => void newMeeting.start(language)}
-                onOpen={(id) => void navigate(paths.meeting(id))}
-                onStop={() => void recorder.stop()}
-              />
+              status.kind === 'none' && (
+                <SidebarTopArea
+                  defaultLanguage={defaultLanguage.language}
+                  onStart={(language) => void newMeeting.start(language)}
+                />
+              )
             }
           />
-          <SidebarInset className="h-[calc(99svh-var(--header-height))] relative">
+          <SidebarInset className="min-h-0">
             <DotPattern
               className={cn('mask-[linear-gradient(to_top,white,transparent,transparent)]')}
             />

@@ -12,6 +12,12 @@ export interface AppIpc {
   sendCommand: (command: AppCommand) => void
 }
 
+/** Pencerenin tam ekrana girip çıkışını renderer'a bildirir (ilk değer `app:is-full-screen` ile okunur). */
+export function forwardFullScreen(window: BrowserWindow): void {
+  window.on('enter-full-screen', () => window.webContents.send('app:full-screen', true))
+  window.on('leave-full-screen', () => window.webContents.send('app:full-screen', false))
+}
+
 export function registerAppIpc({ dataDir, createWindow }: AppIpcOptions): AppIpc {
   ipcMain.handle('app:get-info', (): AppInfo => ({
     appVersion: app.getVersion(),
@@ -28,6 +34,12 @@ export function registerAppIpc({ dataDir, createWindow }: AppIpcOptions): AppIpc
     pendingCommand = null
     return command
   })
+
+  // Tam ekranda trafik ışıkları kaybolur; renderer header'daki boşluğu buna göre açar/kapatır.
+  ipcMain.handle(
+    'app:is-full-screen',
+    (event) => BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false
+  )
 
   return {
     sendCommand: (command) => {

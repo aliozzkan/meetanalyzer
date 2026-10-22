@@ -90,6 +90,14 @@ const api = {
         callback(command)
       ipcRenderer.on('app:command', listener)
       return () => ipcRenderer.removeListener('app:command', listener)
+    },
+    isFullScreen: (): Promise<boolean> => ipcRenderer.invoke('app:is-full-screen'),
+    // Pencere tam ekrana girip çıktıkça çağrılır; dönen işlev aboneliği kaldırır.
+    onFullScreenChange: (callback: (fullScreen: boolean) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, fullScreen: boolean): void =>
+        callback(fullScreen)
+      ipcRenderer.on('app:full-screen', listener)
+      return () => ipcRenderer.removeListener('app:full-screen', listener)
     }
   }
 }
