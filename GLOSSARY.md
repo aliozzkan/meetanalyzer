@@ -25,7 +25,7 @@ Kullanıcının ayarlarda seçtiği, her yeni Meeting'in Language'ı olarak öne
 _Avoid_: Preferred language
 
 **Recording**:
-Bir Meeting sırasında kullanıcının başlatıp bitirdiği ses kaydı. Bir Meeting'in birden çok Recording'i olabilir.
+Bir Meeting sırasında kullanıcının başlatıp bitirdiği ses kaydı; kullanıcının mikrofonunu ve bilgisayarın sistem sesini (toplantıdaki diğer katılımcılar) aynı anda, ayrı ayrı kaydeder. İkisinden biri kaydedilemiyorsa Recording başlamaz. Bir Meeting'in birden çok Recording'i olabilir.
 _Avoid_: Record (isim olarak), kayıt oturumu
 
 **Transcription**:
@@ -49,8 +49,20 @@ Transcription'ın cihaz üzerinde konuşmayı metne dökmek için kullandığı,
 _Avoid_: Whisper dosyası, ses modeli
 
 **Transcript**:
-Transcription'ın ürettiği, bir Meeting'e ait tek metin; Meeting'in tüm Recording'lerini kapsar.
+Transcription'ın ürettiği, bir Meeting'e ait tek metin; Meeting'in tüm Recording'lerini kapsar. Her bölümü bir Side'a aittir ve bölümler konuşulma sırasına göre dizilir.
 _Avoid_: Transcribe (isim olarak), döküm
+
+**Side**:
+Transcript'teki bir konuşmanın hangi taraftan geldiği: Self ya da Others. Kişi bazında konuşmacı ayrımı değildir; Others birden çok katılımcıyı kapsayabilir.
+_Avoid_: Speaker, channel, konuşmacı
+
+**Self**:
+Kullanıcının kendi konuşmasının Side'ı. Kulaklıksız bir toplantıda hoparlörden kullanıcının mikrofonuna giren diğer katılımcıların sesi Self sayılmaz.
+_Avoid_: Me, user (Side olarak)
+
+**Others**:
+Toplantıda kullanıcı dışındaki herkesin konuşmasının Side'ı.
+_Avoid_: Participants, remote, karşı taraf
 
 **Suspect Word**:
 Transcription'ın düşük güvenle ürettiği, yanlış duyulmuş olma ihtimali olan Transcript kelimesi.
@@ -61,7 +73,7 @@ Kullanıcının tek bir Suspect Word'ün yerine yazdığı metin; birden çok ke
 _Avoid_: Edit, fix
 
 **Approved Transcript**:
-Kullanıcının Suspect Word'leri gözden geçirip onayladığı, analize gönderilebilir Transcript. Onaydan sonra değişmez ve Meeting'in Recording sesleri silinir; düzeltilmemiş Suspect Word'ler olduğu gibi kalır.
+Kullanıcının Suspect Word'leri gözden geçirip onayladığı, analize gönderilebilir Transcript. Side bilgisini korur. Onaydan sonra değişmez ve Meeting'in Recording sesleri silinir; düzeltilmemiş Suspect Word'ler olduğu gibi kalır.
 _Avoid_: Final transcript, confirmed transcript
 
 **Analysis**:
