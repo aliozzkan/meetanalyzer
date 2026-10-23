@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Blocked by: 01, 04
 
 # Sidebar satır aksiyonları
@@ -17,7 +17,7 @@ Spec: [../spec.md](../spec.md) → "Sidebar > Meeting listesi"
 
 - [x] Her durumda menü yalnızca o durumda geçerli aksiyonları sunar (docs/meeting-lifecycle.md tablosuyla tutarlı).
 - [x] Sağ tık ve "⋯" aynı menüyü açar; klavye ile erişilebilir.
-- [ ] Silme onaysız çalışmaz; Recording'deki Meeting silinince kayıt düzgünce biter.
+- [x] Silme onaysız çalışmaz; Recording'deki Meeting silinince kayıt düzgünce biter.
 
 ## Comments
 
@@ -32,9 +32,11 @@ Spec: [../spec.md](../spec.md) → "Sidebar > Meeting listesi"
 
 **2026-10-22 (app-shell gözden geçirmesi):** Kod tamam; gerçek Electron'da elle denenene kadar `ready-for-human`. Denenecekler:
 
-- [ ] Kayıt alınırken sidebar'dan Recording'deki Meeting'i sil: onay istenir, kayıt düzgünce biter, açıksa Home'a dönülür.
-- [ ] Kayıt sürerken o Meeting'in menüsünde Kapat devre dışı.
-- [ ] Menüden Yeniden adlandır: animasyonlar açıkken input odaklı açılır.
-- [ ] Yeni header (`af13cf8`) sonrası sağ tık ve "⋯" menüsü ile satır içi rename hâlâ çalışıyor.
+- [x] Kayıt alınırken sidebar'dan Recording'deki Meeting'i sil: onay istenir, kayıt düzgünce biter, açıksa Home'a dönülür.
+- [x] Kayıt sürerken o Meeting'in menüsünde Kapat devre dışı.
+- [x] Menüden Yeniden adlandır: animasyonlar açıkken input odaklı açılır.
+- [x] Yeni header (`af13cf8`) sonrası sağ tık ve "⋯" menüsü ile satır içi rename hâlâ çalışıyor.
 
 Hepsi geçince üçüncü kabul kriteri işaretlenip `resolved` yapılır.
+
+**2026-10-22 (doğrulama):** Dört madde kullanıcı tarafından gerçek Electron uygulamasında elle denendi ve geçti; kod değişikliği gerekmedi. Üçüncü kabul kriteri işaretlendi, issue `resolved`.
