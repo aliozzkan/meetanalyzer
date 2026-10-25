@@ -81,7 +81,7 @@ describe('Recording servisi', () => {
           'SELECT kind, file_path, duration_ms FROM recording_channels WHERE recording_id = ?'
         )
         .all(recording.id)
-    ).toEqual([{ kind: 'mic', file_path: `m1/${recording.id}/mic.wav`, duration_ms: 2_000 }])
+    ).toEqual([{ kind: 'mic', file_path: join('m1', recording.id, 'mic.wav'), duration_ms: 2_000 }])
     expect(existsSync(file)).toBe(true)
   })
 

@@ -29,6 +29,13 @@ export default defineConfig(
     }
   },
   {
+    // Node betikleri düz JavaScript'tir; dönüş tipi yazılamaz.
+    files: ['scripts/**/*.mjs'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off'
+    }
+  },
+  {
     // shadcn CLI'nin ürettiği kod: `shadcn apply`/`add` dosyaları baştan yazdığı için elle düzeltme tutmaz.
     files: ['src/renderer/src/components/ui/**/*.tsx'],
     rules: {

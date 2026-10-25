@@ -7,7 +7,7 @@ import { registerMeetingIpc } from './meetings/ipc'
 import { createAppModelService, getModelPath } from './model/app-model'
 import { createStateBroadcaster, registerModelIpc } from './model/ipc'
 import { createMeetingService } from './meetings/meeting-service'
-import { getWhisperPaths } from './whisper/paths'
+import { getWhisperPaths, type WhisperPaths } from './whisper/paths'
 import { SUSPECT_WORD_PLAYBACK_PADDING_MS, SUSPECT_WORD_THRESHOLD, WHISPER_NICE } from './config'
 import { performanceCoreCount } from './transcription/cpu'
 import { transcribeRecording } from './transcription/transcribe-recording'
@@ -146,11 +146,16 @@ app.whenReady().then(() => {
   })
   registerModelIpc(model)
 
-  const whisperPaths = getWhisperPaths({
-    isPackaged: app.isPackaged,
-    appPath: app.getAppPath(),
-    resourcesPath: process.resourcesPath
-  })
+  // Her Transcription'da çözülür: desteklenmeyen platformun hatası uygulamayı açılışta düşürmez,
+  // Transcription hatası olarak görünür.
+  const whisperPaths = (): WhisperPaths =>
+    getWhisperPaths({
+      isPackaged: app.isPackaged,
+      appPath: app.getAppPath(),
+      resourcesPath: process.resourcesPath,
+      platform: process.platform,
+      arch: process.arch
+    })
   const meetings = createMeetingService({
     db,
     recordingsDir,
@@ -164,23 +169,25 @@ app.whenReady().then(() => {
     power,
     isModelReady: () => model.getState().status === 'ready',
     onStatus: createStatusBroadcaster(),
-    transcribe: ({ recordingId, language, onProgress, signal }) =>
-      transcribeRecording({
+    transcribe: async ({ recordingId, language, onProgress, signal }) => {
+      const { cli, vadModel } = whisperPaths()
+      return transcribeRecording({
         db: database,
         recordingsDir,
         recordingId,
         language,
         suspectThreshold: SUSPECT_WORD_THRESHOLD,
         whisper: {
-          cliPath: whisperPaths.cli,
+          cliPath: cli,
           modelPath: getModelPath(modelsDir),
-          vadModelPath: whisperPaths.vadModel,
+          vadModelPath: vadModel,
           threads: whisperThreads(performanceCoreCount()),
           nice: WHISPER_NICE
         },
         onProgress,
         signal
       })
+    }
   })
   registerMeetingIpc(meetings)
   registerRecordingIpc(recordings)
