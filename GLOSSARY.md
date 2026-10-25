@@ -77,7 +77,7 @@ Kullanıcının Suspect Word'leri gözden geçirip onayladığı, analize gönde
 _Avoid_: Final transcript, confirmed transcript
 
 **Analysis**:
-Backend'deki modelin bir Approved Transcript üzerinden ürettiği toplantı verimliliği değerlendirmesi. Bir Meeting için en fazla bir başarılı Analysis vardır ve her başarılı Analysis kullanıcıya gösterilir.
+Bir Approved Transcript'in backend'de model tarafından şemaya uygun JSON'a dönüştürülmesi ve bu JSON üzerinde backend'in kendi algoritmasıyla hesaplanan toplantı verimliliği değerlendirmesi. Model yalnızca yapılandırır, değerlendirmeyi algoritma yapar. Bir Meeting için en fazla bir başarılı Analysis vardır ve her başarılı Analysis kullanıcıya gösterilir.
 _Avoid_: Report, sonuç
 
 **Analysis Request**:
