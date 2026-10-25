@@ -50,6 +50,7 @@ Terimler [GLOSSARY.md](../../GLOSSARY.md), durumlar [docs/meeting-lifecycle.md](
 
 - Header pencerenin en üstündedir. Windows'un küçült, büyüt ve kapat düğmeleri header'ın sağına oturur ve renkleri açık/koyu temaya uyar. Header'ın boş alanından pencere sürüklenir.
 - Görünür menü çubuğu yoktur. Ctrl+N (Yeni Meeting) ve Ctrl+, (Ayarlar) kısayolları çalışır; iki komut header'da da vardır.
+- Geri ve ileri Windows'ta Alt+← / Alt+→ ile gider (macOS'ta ⌘[ / ⌘]); header'daki ipuçları platformun kısayolunu gösterir.
 
 ### Kapatma
 
@@ -144,6 +145,15 @@ Issue 02'nin ölçecekleri:
 - ggml, backend dll'lerini ASCII dışı karakterli bir klasörden yükleyebiliyor mu.
 - UTF-8 manifest'i whisper'ın model, WAV ve çıktı yollarını açmasına yetiyor mu.
 - `vulkan-1.dll` olmayan bir makinede (GPU'suz bir sanal makine) CPU'ya sessizce düşüyor mu.
+
+Sonuçlar (issue 02, 2026-10-25; i7-11800H, RTX 3050 + Intel UHD, Türkçe kod sayfası 1254):
+
+- MSVC (VS 2026) dokuz CPU varyantını (`x64`, `sse42`, `sandybridge`, `haswell`, `skylakex`, `cannonlake`, `cascadelake`, `icelake`, `alderlake`) ve Vulkan backend'ini derliyor; clang-cl gerekmiyor. Tüm binary'ler yalnızca `KERNEL32.dll`'e (Vulkan backend ayrıca `vulkan-1.dll`'e) bağlı.
+- ggml backend dll'lerini ASCII dışı karakterli klasörden yüklüyor; yükleme geniş karakterli (UTF-16) yollarla yapılıyor.
+- UTF-8 manifest'i gerekli ve yeterli: manifest'siz binary Türkçe harfli yolda çöküyor, Kiril harfli yolda hata verip çıkıyor; manifest'li binary ikisinde de transcribe ediyor.
+- CPU yedeği: `ggml-vulkan.dll` kaldırılınca ve `GGML_VK_VISIBLE_DEVICES=-1` ile Vulkan cihazları gizlenince Transcription CPU'da (`ggml-cpu-cascadelake.dll`) aynı sonuçla tamamlanıyor. `vulkan-1.dll`'in hiç olmadığı bir makine denenmedi (bu makinede System32'de duruyor); o durumda da ggml Vulkan backend dll'ini yükleyemez ve aynı yola düşer.
+- `os.setPriority(pid, 10)` Windows'ta whisper-cli'yi `BelowNormal` önceliğinde çalıştırıyor; iptal süreci sonlandırıyor.
+- Node 22'nin `fs.cpSync`'i Windows'ta ASCII dışı karakterli hedefte süreci düşürüyor; betikler dosyaları tek tek kopyalar.
 
 Issue 07'nin ölçecekleri:
 

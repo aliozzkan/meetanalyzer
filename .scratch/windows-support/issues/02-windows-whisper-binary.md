@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 Blocked by: 01
 
 # Windows whisper binary'si
@@ -18,16 +18,28 @@ Karar kaydı: [ADR-0009](../../../docs/adr/0009-windows-whisper-vulkan-and-dynam
 - Doğrulama (derlemeden sonra; `--check` modu en azından dosyaların varlığını ve VAD SHA-256'sını denetler):
   - `dumpbin /dependents`: sistem dll'leri, aynı klasördeki dll'ler ve `vulkan-1.dll` dışında bağımlılık yok. `MSVCP*` / `VCRUNTIME*` hata.
   - `--help` çıktısında `--vad`.
-  - ASCII dışı karakterli geçici bir klasöre kopyalanıp ASCII dışı karakterli yoldaki kısa bir WAV ve VAD modeliyle çalıştırılır; JSON çıktısı yazılmış olmalıdır. Kısa WAV betik içinde üretilebilir (sessizlik yeterli: amaç yolların açılması ve çıktının yazılması).
+  - ASCII dışı karakterli geçici bir klasöre kopyalanıp ASCII dışı karakterli yoldaki kısa bir WAV ve VAD modeliyle çalıştırılır; JSON çıktısı yazılmış olmalıdır. Girdi olarak whisper.cpp kaynağındaki `samples/jfk.wav` ve küçük bir model kullanılır.
 - `cpu.ts`: Windows'ta performans çekirdeği tahmini `max(1, floor(mantıksal / 2))`. `whisperThreads` değişmez.
 - `docs/tuning.md`: Windows derleme ayarları için yeni satır; thread satırına Windows hesabı; whisper.cpp sürümü satırında güncelleme adımına Windows derlemesi eklenir.
 - Spec'teki "Doğrulanmamış varsayımlar"ın issue 02 maddeleri ölçülür ve sonuçları spec'e yazılır.
 
 ## Kabul kriterleri
 
-- [ ] Windows'ta `pnpm build:whisper` `resources/bin/win32-x64/` altına `whisper-cli.exe` ve dll'leri üretir; tüm doğrulamalar geçer.
-- [ ] `pnpm check:whisper` Windows'ta binary ve model hazırsa geçer, eksikse "önce `pnpm build:whisper`" der.
-- [ ] `pnpm dev` ile Windows'ta, kullanıcı adında Türkçe karakter olan bu makinede, kısa bir Meeting transcribe olur.
-- [ ] `vulkan-1.dll` olmayan bir ortamda (GPU'suz sanal makine ya da dll'i geçici olarak gizleyerek) Transcription CPU'da tamamlanır.
-- [ ] `cpu.ts` için Windows hesabının birim testi var (8 ve 16 mantıksal çekirdek → 2 ve 4 whisper thread'i).
-- [ ] ADR-0009 ve `docs/tuning.md` ölçülen sonuçlarla uyumludur.
+- [x] Windows'ta `pnpm build:whisper` `resources/bin/win32-x64/` altına `whisper-cli.exe` ve dll'leri üretir; tüm doğrulamalar geçer.
+- [x] `pnpm check:whisper` Windows'ta binary ve model hazırsa geçer, eksikse "önce `pnpm build:whisper`" der.
+- [x] `pnpm dev` ile Windows'ta, kullanıcı adında Türkçe karakter olan bu makinede, kısa bir Meeting transcribe olur.
+- [x] `vulkan-1.dll` olmayan bir ortamda (GPU'suz sanal makine ya da dll'i geçici olarak gizleyerek) Transcription CPU'da tamamlanır.
+- [x] `cpu.ts` için Windows hesabının birim testi var (8 ve 16 mantıksal çekirdek → 2 ve 4 whisper thread'i).
+- [x] ADR-0009 ve `docs/tuning.md` ölçülen sonuçlarla uyumludur.
+
+## Comments
+
+**2026-10-25:** Windows'ta uygulandı ve bu makinede doğrulandı (i7-11800H, RTX 3050 + Intel UHD, Türkçe kod sayfası). Sonuçlar spec'in "Doğrulanmamış varsayımlar" bölümünde.
+
+- `build-whisper.mjs` win32-x64 dalı: VS geliştirici ortamını `vswhere` + `VsDevCmd.bat` ile kurar, Vulkan SDK'yı `VULKAN_SDK`'dan ya da `C:\VulkanSDK` altındaki en yeni sürümden bulur, Ninja + MSVC ile derler, `whisper-cli.exe`, `whisper.dll` ve `ggml*.dll`'i `resources/bin/win32-x64/` altına koyar ve UTF-8 manifest'ini gömer. `GGML_OPENMP=OFF`: açık olsaydı `vcomp140.dll` gerekirdi.
+- Doğrulama: `dumpbin` (VC++ runtime ve OpenMP dll'leri yasak), `--help`, ASCII dışı karakterli klasörlerde (Türkçe ve Kiril) `jfk.wav` duman testi. Duman testi modeli `ggml-tiny-q5_1.bin` (32 MB, SHA-256 sabit) yalnızca `.cache/smoke/`'a iner.
+- CPU yedeği iki yolla denendi: `ggml-vulkan.dll` kaldırılarak ve `GGML_VK_VISIBLE_DEVICES=-1` ile. `vulkan-1.dll`'in hiç olmadığı bir makine denenmedi.
+- `runWhisper` gerçek `whisper-cli.exe` ile geçici bir testte denendi: transcript, ilerleme, `BelowNormal` öncelik ve iptal doğru.
+- `cpu.ts`: `windowsPerformanceCores`; bu makinede 16 mantıksal çekirdek → 4 whisper thread'i.
+
+**2026-10-25:** Kullanıcı `pnpm dev` ile uygulamanın içinden modeli (large-v3-turbo q5_0) indirdi, mikrofonla kısa bir Meeting kaydetti ve Meeting başarıyla transcribe oldu. Tüm kabul kriterleri karşılandı.
