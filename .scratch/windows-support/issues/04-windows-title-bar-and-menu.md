@@ -11,6 +11,7 @@ Spec: [../spec.md](../spec.md) → "Pencere" (kullanıcı akışı), "Pencere ve
 - `app-header.tsx`: Windows'ta sağda pencere düğmeleri kadar boşluk (`env(titlebar-area-width)` ya da sabit genişlik); düğmeler ve tıklanabilir öğeler `no-drag` kalır. macOS'taki `pl-20` değişmez.
 - Menü: Windows'ta şablon kurulmaya devam eder, görünmez; Ctrl+N ve Ctrl+, çalışır. `autoHideMenuBar` Alt tuşuyla menünün belirmesine yol açıyorsa kapatılır.
 - `setAppUserModelId('com.meetanalyzing.app')`.
+- Geri/ileri kısayolu (`use-history-navigation.ts`) bugün yalnızca `metaKey`e bakıyor; Windows'ta bu Windows tuşudur. Windows'ta Alt+← / Alt+→ kullanılır. Header'daki "Geri (⌘[)" / "İleri (⌘])" ipuçları platforma göre gösterilir.
 
 ## Kabul kriterleri
 
@@ -18,5 +19,6 @@ Spec: [../spec.md](../spec.md) → "Pencere" (kullanıcı akışı), "Pencere ve
 - [ ] Header'ın boş alanından pencere sürüklenir; çift tıklama pencereyi büyütür.
 - [ ] Açık ve koyu temada düğme renkleri header'a uyar; tema değişince hemen güncellenir.
 - [ ] Ctrl+N Yeni Meeting'i, Ctrl+, Ayarlar'ı açar.
+- [ ] Windows'ta Alt+← / Alt+→ geri ve ileri gider; header ipuçları Windows kısayolunu gösterir.
 - [ ] Görev çubuğunda uygulama kendi adı ve ikonuyla gruplanır.
 - [ ] macOS'ta pencere ve menü bugünkü gibidir.
