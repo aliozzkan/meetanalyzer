@@ -30,3 +30,37 @@ Gerçek cihaz, imzalı paket ve dinleyerek doğrulama gerektirdiği için insan 
 - [ ] Prototip paketlenmiş uygulamada sistem sesini 16 kHz mono WAV olarak yazar.
 - [ ] Yukarıdaki her ölçümün sonucu spec'e yazılmıştır; tasarımı değiştiren sonuçlar ilgili issue'lara not düşülmüştür.
 - [ ] Kulaklıklı ve kulaklıksız örnek kayıtlar issue 07 için hazırdır.
+
+## İlerleme
+
+Yapıldı (agent):
+
+- `electron` 39.8.10 → **45.0.0** (Node 24.22, ABI 150). Yalnızca `electron` yükseltildi; `electron-vite` 5, `@electron-toolkit/*`, `electron-builder` mevcut sürümlerinde sorunsuz çalışıyor. `better-sqlite3` `electron-builder install-app-deps` ile yeniden derlendi.
+- `pnpm typecheck` temiz, `pnpm test` 288/288 geçti (Electron 45 altında).
+- `electron-builder.yml`: `mac.minimumSystemVersion: '14.2'` ve `NSAudioCaptureUsageDescription` eklendi.
+- Atılabilir prototip hazır: `prototypes/system-audio-loopback/` (uygulama koduna bağlı değil). Paketlenmiş `.app` hardened runtime ile mevcut `entitlements.mac.plist` kullanılarak imzalandı.
+
+Kalan (insan): Transcription duman testi (model gerekir), aşağıdaki ölçümler, örnek kayıtlar.
+
+### Prototipi çalıştırma
+
+```bash
+cd prototypes/system-audio-loopback
+../../node_modules/.bin/electron-builder --mac --dir --config electron-builder.yml
+open dist/mac-arm64/LoopbackPrototype.app          # izin uygulamaya verilir
+# ya da: ../../node_modules/.bin/electron .        # izin terminale verilir
+```
+
+Pencerede: "video:true iste", "restrictOwnAudio", "loopbackWithMute" kutuları, Başlat/Durdur (`system.wav` `userData/prototype-out/` altına yazılır), 440 Hz test tonu düğmesi. Log penceresi `track.ended/mute/unmute`, `devicechange` ve saniyelik RMS'i gösterir.
+
+### Ölçüm sonuçları
+
+| Ölçüm | Sonuç |
+|---|---|
+| Yalnızca ses (video:false) alınabiliyor mu | |
+| İzin reddi: ne dönüyor | |
+| Hardened runtime ek entitlement | |
+| `restrictOwnAudio` 45'te var mı / dinletme kayda giriyor mu | |
+| AirPods'a geçiş / çıkış değişimi | |
+| Zoom çıkışı varsayılan olmayan cihazda | |
+| Aylık izin yenileme istemi | |

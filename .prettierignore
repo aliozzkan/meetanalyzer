@@ -7,3 +7,6 @@ tsconfig.*.json
 
 # whisper-cli ham çıktıları: biçimlendirilmez
 src/main/transcription/fixtures
+
+# atılabilir prototipler
+prototypes

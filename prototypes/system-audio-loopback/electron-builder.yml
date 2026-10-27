@@ -1,0 +1,23 @@
+appId: com.meetanalyzing.prototype.loopback
+productName: LoopbackPrototype
+electronVersion: 45.0.0
+directories:
+  output: dist
+files:
+  - main.js
+  - preload.js
+  - index.html
+  - renderer.js
+  - package.json
+npmRebuild: false
+mac:
+  target: dir
+  minimumSystemVersion: '14.2'
+  # Uygulamanın ana entitlements'ı (hardened runtime): ek entitlement gerekiyor mu ölçümü için.
+  entitlements: ../../build/entitlements.mac.plist
+  entitlementsInherit: ../../build/entitlements.mac.plist
+  hardenedRuntime: true
+  notarize: false
+  extendInfo:
+    NSAudioCaptureUsageDescription: Sistem sesi prototipi / System audio prototype
+    NSMicrophoneUsageDescription: Sistem sesi prototipi / System audio prototype

@@ -20,9 +20,11 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  minimumSystemVersion: '14.2'
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     NSMicrophoneUsageDescription: Meetanalyzing, toplantı seslerini kaydetmek için mikrofonunu kullanır. / Meetanalyzing uses your microphone to record meeting audio.
+    NSAudioCaptureUsageDescription: Meetanalyzing, toplantıdaki diğer katılımcıların sesini kaydetmek için bilgisayarın sistem sesini yakalar. / Meetanalyzing captures system audio to record the other participants in your meeting.
   notarize: false
 dmg:
   artifactName: ${name}-${version}.${ext}

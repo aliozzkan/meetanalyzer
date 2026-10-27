@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sistem sesi prototipi</title>
+    <style>
+      body { font: 13px system-ui; margin: 16px; }
+      button { margin: 2px 4px 2px 0; padding: 4px 8px; }
+      fieldset { margin: 8px 0; }
+      #log { background: #111; color: #9f9; padding: 8px; height: 300px; overflow: auto; white-space: pre-wrap; font: 12px ui-monospace, monospace; }
+      #bar { height: 10px; background: #4a4; width: 0; transition: width 60ms; }
+    </style>
+  </head>
+  <body>
+    <h3>Sistem sesi (loopback) prototipi</h3>
+    <div id="info"></div>
+
+    <fieldset>
+      <legend>Yakalama</legend>
+      <label><input type="checkbox" id="video" /> video:true iste (sonra video track'i durdur)</label><br />
+      <label><input type="checkbox" id="restrict" /> audio: { restrictOwnAudio: true }</label><br />
+      <label><input type="checkbox" id="mute" /> loopbackWithMute (yerel çalmayı sustur)</label><br />
+      <button id="start">Başlat</button>
+      <button id="stop">Durdur ve system.wav yaz</button>
+      <div style="background:#ddd;width:300px;margin-top:6px"><div id="bar"></div></div>
+      <span id="stats"></span>
+    </fieldset>
+
+    <fieldset>
+      <legend>Yardımcılar</legend>
+      <button id="tone">440 Hz test tonu çal (AudioContext)</button>
+      <button id="toneStop">Tonu durdur</button>
+      <small> — Suspect Word dinletmesinin kayda girip girmediğini ölçmek için</small>
+    </fieldset>
+
+    <div id="log"></div>
+    <script src="renderer.js"></script>
+  </body>
+</html>
