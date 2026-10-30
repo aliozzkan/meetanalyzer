@@ -42,6 +42,10 @@ ${body.replaceAll('{{DIR}}', dir)}
   return path
 }
 
+// Sahte binary bir kabuk betiği olduğu için onu çalıştıran testler Windows'ta atlanır; Windows'ta çalıştırıcı
+// gerçek whisper-cli.exe ile doğrulanır (.scratch/windows-support/issues/02-windows-whisper-binary.md).
+const itPosix = it.skipIf(process.platform === 'win32')
+
 // Koşul sağlanana kadar kısa aralıklarla bekler (sabit uyku yerine); zaman aşımında hata verir.
 async function waitFor(condition: () => boolean, timeoutMs = 3_000): Promise<void> {
   const deadline = Date.now() + timeoutMs
@@ -76,25 +80,31 @@ function setup(body: string): { options: RunWhisperOptions; dir: string; workDir
 }
 
 describe('runWhisper', () => {
-  it('whisper’ı çalıştırır; JSON çıktısını ve stderr’i döndürür, ilerlemeyi yayınlar, geçici dosyayı siler', async () => {
-    const { options, workDir } = setup(`
+  itPosix(
+    'whisper’ı çalıştırır; JSON çıktısını ve stderr’i döndürür, ilerlemeyi yayınlar, geçici dosyayı siler',
+    async () => {
+      const { options, workDir } = setup(`
 echo "whisper_vad: vad_segment_info: orig_start: 1.00, orig_end: 2.00, vad_start: 0.00, vad_end: 1.00" >&2
 echo "whisper_print_progress_callback: progress = 25%" >&2
 sleep 0.2
 echo "whisper_print_progress_callback: progress = 100%" >&2
 echo '${OK_JSON}' > "$PREFIX.json"
 `)
-    const progress: number[] = []
+      const progress: number[] = []
 
-    const result = await runWhisper({ ...options, onProgress: (percent) => progress.push(percent) })
+      const result = await runWhisper({
+        ...options,
+        onProgress: (percent) => progress.push(percent)
+      })
 
-    expect(result.json).toEqual({ transcription: [] })
-    expect(result.stderr).toContain('vad_segment_info: orig_start: 1.00')
-    expect(progress).toEqual([25, 100])
-    expect(readdirSync(workDir)).toEqual([]) // geçici klasör temizlendi
-  })
+      expect(result.json).toEqual({ transcription: [] })
+      expect(result.stderr).toContain('vad_segment_info: orig_start: 1.00')
+      expect(progress).toEqual([25, 100])
+      expect(readdirSync(workDir)).toEqual([]) // geçici klasör temizlendi
+    }
+  )
 
-  it('bir satır iki parçada gelse de ilerleme doğru okunur', async () => {
+  itPosix('bir satır iki parçada gelse de ilerleme doğru okunur', async () => {
     const { options } = setup(`
 printf 'whisper_print_progress_callback: progress =' >&2
 sleep 0.2
@@ -108,15 +118,18 @@ echo '${OK_JSON}' > "$PREFIX.json"
     expect(progress).toEqual([42])
   })
 
-  it('sıfırdan farklı çıkış kodunu anlaşılır bir hatayla bildirir ve geçici dosyayı siler', async () => {
-    const { options, workDir } = setup(`
+  itPosix(
+    'sıfırdan farklı çıkış kodunu anlaşılır bir hatayla bildirir ve geçici dosyayı siler',
+    async () => {
+      const { options, workDir } = setup(`
 echo "failed to load model" >&2
 exit 3
 `)
 
-    await expect(runWhisper(options)).rejects.toMatchObject({ code: 'whisper-failed' })
-    expect(readdirSync(workDir)).toEqual([])
-  })
+      await expect(runWhisper(options)).rejects.toMatchObject({ code: 'whisper-failed' })
+      expect(readdirSync(workDir)).toEqual([])
+    }
+  )
 
   it('binary ya da VAD modeli yoksa "pnpm build:whisper çalıştır" der', async () => {
     const { options } = setup(`echo '${OK_JSON}' > "$PREFIX.json"`)
@@ -131,7 +144,7 @@ exit 3
     })
   })
 
-  it('JSON üretilmediyse ya da bozuksa invalid-output verir', async () => {
+  itPosix('JSON üretilmediyse ya da bozuksa invalid-output verir', async () => {
     const noJson = setup('exit 0')
     await expect(runWhisper(noJson.options)).rejects.toMatchObject({ code: 'invalid-output' })
 
@@ -139,7 +152,7 @@ exit 3
     await expect(runWhisper(broken.options)).rejects.toMatchObject({ code: 'invalid-output' })
   })
 
-  it('düşük öncelikle (nice) çalıştırılır', async () => {
+  itPosix('düşük öncelikle (nice) çalıştırılır', async () => {
     // Betik, önceliği ayarlanana kadar (nice 0'dan farklı olana kadar) bekleyip değeri yazar.
     const { options, dir } = setup(`
 for i in $(seq 1 100); do
@@ -156,34 +169,37 @@ echo '${OK_JSON}' > "$PREFIX.json"
     expect(readFileSync(join(dir, 'nice.txt'), 'utf8').trim()).toBe('10')
   })
 
-  it('iptal edilirse süreç öldürülür, cancelled hatası verilir, geçici dosya silinir', async () => {
-    const { options, dir, workDir } = setup(`
+  itPosix(
+    'iptal edilirse süreç öldürülür, cancelled hatası verilir, geçici dosya silinir',
+    async () => {
+      const { options, dir, workDir } = setup(`
 echo $$ > "{{DIR}}/pid.txt"
 echo "whisper_print_progress_callback: progress = 5%" >&2
 exec sleep 30
 `)
-    const controller = new AbortController()
-    const started = Date.now()
+      const controller = new AbortController()
+      const started = Date.now()
 
-    const run = runWhisper({
-      ...options,
-      signal: controller.signal,
-      onProgress: () => controller.abort() // ilk ilerlemede iptal
-    })
+      const run = runWhisper({
+        ...options,
+        signal: controller.signal,
+        onProgress: () => controller.abort() // ilk ilerlemede iptal
+      })
 
-    await expect(run).rejects.toMatchObject({ code: 'cancelled' })
-    expect(Date.now() - started).toBeLessThan(1_500) // SIGTERM hemen etkili oldu; 2 sn'lik SIGKILL yedeği beklenmedi
-    const pid = Number(readFileSync(join(dir, 'pid.txt'), 'utf8').trim())
-    await waitFor(() => {
-      try {
-        process.kill(pid, 0)
-        return false
-      } catch {
-        return true // süreç artık yok
-      }
-    })
-    expect(readdirSync(workDir)).toEqual([])
-  })
+      await expect(run).rejects.toMatchObject({ code: 'cancelled' })
+      expect(Date.now() - started).toBeLessThan(1_500) // SIGTERM hemen etkili oldu; 2 sn'lik SIGKILL yedeği beklenmedi
+      const pid = Number(readFileSync(join(dir, 'pid.txt'), 'utf8').trim())
+      await waitFor(() => {
+        try {
+          process.kill(pid, 0)
+          return false
+        } catch {
+          return true // süreç artık yok
+        }
+      })
+      expect(readdirSync(workDir)).toEqual([])
+    }
+  )
 
   it('başlamadan önce iptal edilmiş sinyalle hiç çalıştırmaz', async () => {
     const { options, dir } = setup('touch "{{DIR}}/ran.txt"')

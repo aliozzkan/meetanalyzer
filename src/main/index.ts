@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, dialog, powerSaveBlocker, session } from 'electron'
+import { app, shell, BrowserWindow, dialog, nativeTheme, powerSaveBlocker, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -7,7 +7,7 @@ import { registerMeetingIpc } from './meetings/ipc'
 import { createAppModelService, getModelPath } from './model/app-model'
 import { createStateBroadcaster, registerModelIpc } from './model/ipc'
 import { createMeetingService } from './meetings/meeting-service'
-import { getWhisperPaths } from './whisper/paths'
+import { getWhisperPaths, type WhisperPaths } from './whisper/paths'
 import { SUSPECT_WORD_PLAYBACK_PADDING_MS, SUSPECT_WORD_THRESHOLD, WHISPER_NICE } from './config'
 import { performanceCoreCount } from './transcription/cpu'
 import { transcribeRecording } from './transcription/transcribe-recording'
@@ -29,6 +29,8 @@ import { recoverInterruptedRecordings } from './recordings/recovery'
 import { registerRecordingIpc } from './recordings/ipc'
 import { createRecordingService, type RecordingService } from './recordings/recording-service'
 import { forwardFullScreen, registerAppIpc } from './app/ipc'
+import { createQuitGuard, type QuitState } from './app/quit-guard'
+import { followThemeInTitleBar, titleBarOptions } from './app/title-bar'
 import { registerSettingsIpc } from './settings/ipc'
 import { createSettingsService } from './settings/settings-service'
 import { installAppMenu } from './menu'
@@ -36,6 +38,27 @@ import { installAppMenu } from './menu'
 let db: Db | undefined
 let recordings: RecordingService | undefined
 let transcriptions: TranscriptionQueue | undefined
+
+// Recording ya da Transcription sürerken kapatmadan önce sorar.
+const quitGuard = createQuitGuard(
+  (warning) =>
+    dialog.showMessageBoxSync({
+      type: 'warning',
+      message: 'Kapatmak istediğine emin misin?',
+      detail: warning,
+      buttons: ['Kapat', 'Vazgeç'],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true
+    }) === 0
+)
+
+function quitState(): QuitState {
+  return {
+    recording: recordings?.hasAnyActive() ?? false,
+    transcribing: transcriptions ? hasPendingTranscription(transcriptions.getStatus()) : false
+  }
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -46,10 +69,7 @@ function createWindow(): void {
     minHeight: 520,
     show: false,
     autoHideMenuBar: true,
-    // macOS: trafik ışıkları header'ın (44 px) solundaki boşluğa oturur; diğer platformlarda normal başlık çubuğu.
-    ...(process.platform === 'darwin'
-      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 14 } }
-      : {}),
+    ...titleBarOptions(process.platform, nativeTheme.shouldUseDarkColors),
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -69,6 +89,13 @@ function createWindow(): void {
   })
   mainWindow.webContents.on('render-process-gone', () => recordings?.stopAll())
   mainWindow.on('closed', () => recordings?.stopAll())
+  // Windows/Linux'ta son pencereyi kapatmak uygulamayı kapatır. macOS'ta uygulama ve Transcription yaşamaya
+  // devam eder, ama mikrofon yakalama renderer'da olduğu için Recording yine durur: yalnızca o sorulur.
+  mainWindow.on('close', (event) => {
+    const quits = process.platform !== 'darwin'
+    const state = quits ? quitState() : { ...quitState(), transcribing: false }
+    if (!quitGuard.allow(state, quits)) event.preventDefault()
+  })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
@@ -88,8 +115,9 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  // Windows görev çubuğu gruplaması ve bildirimler bu kimliğe bakar; electron-builder.yml → appId ile aynı.
+  electronApp.setAppUserModelId('com.meetanalyzing.app')
+  followThemeInTitleBar()
 
   try {
     db = openDatabase(join(app.getPath('userData'), 'meetanalyzing.db'))
@@ -146,11 +174,16 @@ app.whenReady().then(() => {
   })
   registerModelIpc(model)
 
-  const whisperPaths = getWhisperPaths({
-    isPackaged: app.isPackaged,
-    appPath: app.getAppPath(),
-    resourcesPath: process.resourcesPath
-  })
+  // Her Transcription'da çözülür: desteklenmeyen platformun hatası uygulamayı açılışta düşürmez,
+  // Transcription hatası olarak görünür.
+  const whisperPaths = (): WhisperPaths =>
+    getWhisperPaths({
+      isPackaged: app.isPackaged,
+      appPath: app.getAppPath(),
+      resourcesPath: process.resourcesPath,
+      platform: process.platform,
+      arch: process.arch
+    })
   const meetings = createMeetingService({
     db,
     recordingsDir,
@@ -164,23 +197,25 @@ app.whenReady().then(() => {
     power,
     isModelReady: () => model.getState().status === 'ready',
     onStatus: createStatusBroadcaster(),
-    transcribe: ({ recordingId, language, onProgress, signal }) =>
-      transcribeRecording({
+    transcribe: async ({ recordingId, language, onProgress, signal }) => {
+      const { cli, vadModel } = whisperPaths()
+      return transcribeRecording({
         db: database,
         recordingsDir,
         recordingId,
         language,
         suspectThreshold: SUSPECT_WORD_THRESHOLD,
         whisper: {
-          cliPath: whisperPaths.cli,
+          cliPath: cli,
           modelPath: getModelPath(modelsDir),
-          vadModelPath: whisperPaths.vadModel,
+          vadModelPath: vadModel,
           threads: whisperThreads(performanceCoreCount()),
           nice: WHISPER_NICE
         },
         onProgress,
         signal
       })
+    }
   })
   registerMeetingIpc(meetings)
   registerRecordingIpc(recordings)
@@ -236,6 +271,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+// Cmd+Q ve menüden çıkış; Windows'ta pencere kapanınca da gelir (onay orada alındıysa tekrar sorulmaz).
+app.on('before-quit', (event) => {
+  if (!quitGuard.allow(quitState(), true)) event.preventDefault()
 })
 
 app.on('will-quit', () => {

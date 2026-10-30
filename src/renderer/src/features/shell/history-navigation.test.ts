@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { appEntryCount, historyAvailability } from './history-navigation'
+import {
+  appEntryCount,
+  historyAvailability,
+  historyShortcut,
+  historyShortcutLabel,
+  type HistoryKey
+} from './history-navigation'
 
 // `state`, react-router'ın hash history'sinin `window.history.state`'e yazdığı kayıttır ({ usr, key, idx }).
 describe('geri/ileri okları', () => {
@@ -54,5 +60,39 @@ describe('uygulamanın geçmiş girişi sayısı', () => {
 
   it('router henüz konumunu yazmadıysa tarayıcının geçmiş uzunluğu kullanılır', () => {
     expect(appEntryCount(null, 4, { entryCount: 4, currentIndex: 3 })).toBe(4)
+  })
+})
+
+describe('geri/ileri kısayolu', () => {
+  const key = (overrides: Partial<HistoryKey>): HistoryKey => ({
+    key: '',
+    code: '',
+    metaKey: false,
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: false,
+    ...overrides
+  })
+
+  it('macOS: ⌘[ geri, ⌘] ileri; Türkçe klavyede fiziksel tuş da eşleşir', () => {
+    expect(historyShortcut(key({ metaKey: true, key: '[' }), true)).toBe('back')
+    expect(historyShortcut(key({ metaKey: true, key: '"', code: 'BracketRight' }), true)).toBe(
+      'forward'
+    )
+    expect(historyShortcut(key({ altKey: true, key: 'ArrowLeft' }), true)).toBeNull()
+  })
+
+  it('Windows: Alt+← geri, Alt+→ ileri; başka değiştirici varsa yok sayılır', () => {
+    expect(historyShortcut(key({ altKey: true, key: 'ArrowLeft' }), false)).toBe('back')
+    expect(historyShortcut(key({ altKey: true, key: 'ArrowRight' }), false)).toBe('forward')
+    expect(
+      historyShortcut(key({ altKey: true, ctrlKey: true, key: 'ArrowLeft' }), false)
+    ).toBeNull()
+    expect(historyShortcut(key({ metaKey: true, key: '[' }), false)).toBeNull()
+  })
+
+  it('ipucu platformun kısayolunu gösterir', () => {
+    expect(historyShortcutLabel('back', true)).toBe('⌘[')
+    expect(historyShortcutLabel('forward', false)).toBe('Alt+→')
   })
 })

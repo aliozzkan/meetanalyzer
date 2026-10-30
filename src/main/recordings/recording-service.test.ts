@@ -46,6 +46,18 @@ function insertMeeting(db: Db, id = 'm1', state = 'recording'): void {
 const ONE_SECOND = Buffer.alloc(32_000, 1)
 
 describe('Recording servisi', () => {
+  it('kayıt sürerken hasAnyActive true, durunca false', async () => {
+    const { recordings, db } = setup()
+    insertMeeting(db)
+    expect(recordings.hasAnyActive()).toBe(false)
+
+    const recording = await recordings.start('m1')
+    expect(recordings.hasAnyActive()).toBe(true)
+
+    recordings.stop(recording.id)
+    expect(recordings.hasAnyActive()).toBe(false)
+  })
+
   it('başlat, ses ekle, durdur: geçerli bir 16 kHz mono WAV dosyası ve DB satırları oluşur', async () => {
     const { recordings, db, recordingsDir, tick } = setup()
     insertMeeting(db)
@@ -81,7 +93,7 @@ describe('Recording servisi', () => {
           'SELECT kind, file_path, duration_ms FROM recording_channels WHERE recording_id = ?'
         )
         .all(recording.id)
-    ).toEqual([{ kind: 'mic', file_path: `m1/${recording.id}/mic.wav`, duration_ms: 2_000 }])
+    ).toEqual([{ kind: 'mic', file_path: join('m1', recording.id, 'mic.wav'), duration_ms: 2_000 }])
     expect(existsSync(file)).toBe(true)
   })
 

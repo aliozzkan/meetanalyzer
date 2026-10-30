@@ -52,7 +52,9 @@ export function MeetingTranscriptionStatus({
           </p>
         </>
       )}
-      <p className="text-sm">Mac&apos;in kapağını kapatırsanız işlem duraklar.</p>
+      <p className="text-sm">
+        Bilgisayar uyku moduna geçerse (ör. dizüstünün kapağını kapatırsan) işlem duraklar.
+      </p>
     </div>
   )
 }

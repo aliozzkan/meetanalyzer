@@ -44,6 +44,8 @@ export interface RecordingService {
   // Pencere yenilenirken ya da uygulama kapanırken: aktif Recording'leri düzgünce bitirir.
   stopAll: () => void
   hasActive: (meetingId: string) => boolean
+  // Herhangi bir Meeting'de kayıt sürüyor mu (uygulamayı kapatma onayı için).
+  hasAnyActive: () => boolean
   // Meeting silinirken çağrılır: dosyaları kapatır, kayıt satırlarına dokunmaz (silme cascade'i halleder).
   abortMeeting: (meetingId: string) => void
 }
@@ -99,6 +101,10 @@ export function createRecordingService({
 
   function hasActive(meetingId: string): boolean {
     return [...active.values()].some((recording) => recording.meetingId === meetingId)
+  }
+
+  function hasAnyActive(): boolean {
+    return active.size > 0
   }
 
   function assertCanStart(meetingId: string): void {
@@ -223,5 +229,5 @@ export function createRecordingService({
     }
   }
 
-  return { start, append, stop, discard, stopAll, hasActive, abortMeeting }
+  return { start, append, stop, discard, stopAll, hasActive, hasAnyActive, abortMeeting }
 }
