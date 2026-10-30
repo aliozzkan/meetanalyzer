@@ -55,7 +55,7 @@ Terimler [GLOSSARY.md](../../GLOSSARY.md), durumlar [docs/meeting-lifecycle.md](
 ### Kapatma
 
 - Recording ya da Transcription sürerken uygulama kapatılmak istenirse şu onay sorulur: "Kapatırsan kayıt durur ve transcription iptal olur." Seçenekler "Kapat" ve "Vazgeç"tir. Metin o anda hangisi sürüyorsa ona göre kurulur.
-- Windows'ta bu soru pencere kapatılınca (X, Alt+F4) ve menüden ya da kısayolla çıkışta sorulur. macOS'ta Cmd+Q ve menüden çıkışta sorulur; pencereyi kapatmak orada uygulamayı kapatmadığı için soru çıkmaz.
+- Windows'ta bu soru pencere kapatılınca (X, Alt+F4) sorulur; Windows'ta çıkışın ayrı bir kısayolu yoktur. macOS'ta Cmd+Q ve menüden çıkışta sorulur. macOS'ta pencereyi kapatmak uygulamayı kapatmaz ve Transcription sürer, ama mikrofon yakalama pencerenin içinde olduğu için Recording durur; bu yüzden pencere kapatılırken yalnızca Recording sürüyorsa sorulur.
 - "Kapat" seçilince bugünkü kapanış işler: Recording düzgünce durdurulur, Transcription öldürülür, Meeting açılışta Closed'a döner. Kullanıcı bir kez onayladıysa aynı kapanışta ikinci kez sorulmaz.
 
 ### Transcription
@@ -125,7 +125,7 @@ Terimler [GLOSSARY.md](../../GLOSSARY.md), durumlar [docs/meeting-lifecycle.md](
 ### Kapatma onayı
 
 - Main'de tek bir karar fonksiyonu vardır: "şu an kapatmak bir şey kaybettirir mi". Fonksiyon Recording servisinden aktif kayıt, kuyruktan çalışan Transcription bilgisini alır ve onay metnini döndürür. Fonksiyon test edilir.
-- `before-quit` (her platform) ve Windows'ta ana pencerenin `close` olayı bu fonksiyonu kullanır. Onay alınırsa kapanış devam eder ve aynı kapanışta tekrar sorulmaz.
+- `before-quit` (her platform) ve ana pencerenin `close` olayı bu fonksiyonu kullanır; `close` Windows'ta çıkış sayılır, macOS'ta yalnızca Recording'e bakar. Onay alınırsa kapanış devam eder ve aynı kapanışta tekrar sorulmaz.
 
 ### Güç
 

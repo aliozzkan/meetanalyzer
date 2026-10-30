@@ -29,6 +29,7 @@ import { recoverInterruptedRecordings } from './recordings/recovery'
 import { registerRecordingIpc } from './recordings/ipc'
 import { createRecordingService, type RecordingService } from './recordings/recording-service'
 import { forwardFullScreen, registerAppIpc } from './app/ipc'
+import { createQuitGuard, type QuitState } from './app/quit-guard'
 import { followThemeInTitleBar, titleBarOptions } from './app/title-bar'
 import { registerSettingsIpc } from './settings/ipc'
 import { createSettingsService } from './settings/settings-service'
@@ -37,6 +38,27 @@ import { installAppMenu } from './menu'
 let db: Db | undefined
 let recordings: RecordingService | undefined
 let transcriptions: TranscriptionQueue | undefined
+
+// Recording ya da Transcription sürerken kapatmadan önce sorar.
+const quitGuard = createQuitGuard(
+  (warning) =>
+    dialog.showMessageBoxSync({
+      type: 'warning',
+      message: 'Kapatmak istediğine emin misin?',
+      detail: warning,
+      buttons: ['Kapat', 'Vazgeç'],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true
+    }) === 0
+)
+
+function quitState(): QuitState {
+  return {
+    recording: recordings?.hasAnyActive() ?? false,
+    transcribing: transcriptions ? hasPendingTranscription(transcriptions.getStatus()) : false
+  }
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -67,6 +89,13 @@ function createWindow(): void {
   })
   mainWindow.webContents.on('render-process-gone', () => recordings?.stopAll())
   mainWindow.on('closed', () => recordings?.stopAll())
+  // Windows/Linux'ta son pencereyi kapatmak uygulamayı kapatır. macOS'ta uygulama ve Transcription yaşamaya
+  // devam eder, ama mikrofon yakalama renderer'da olduğu için Recording yine durur: yalnızca o sorulur.
+  mainWindow.on('close', (event) => {
+    const quits = process.platform !== 'darwin'
+    const state = quits ? quitState() : { ...quitState(), transcribing: false }
+    if (!quitGuard.allow(state, quits)) event.preventDefault()
+  })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
@@ -242,6 +271,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+// Cmd+Q ve menüden çıkış; Windows'ta pencere kapanınca da gelir (onay orada alındıysa tekrar sorulmaz).
+app.on('before-quit', (event) => {
+  if (!quitGuard.allow(quitState(), true)) event.preventDefault()
 })
 
 app.on('will-quit', () => {

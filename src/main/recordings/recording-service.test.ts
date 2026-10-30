@@ -46,6 +46,18 @@ function insertMeeting(db: Db, id = 'm1', state = 'recording'): void {
 const ONE_SECOND = Buffer.alloc(32_000, 1)
 
 describe('Recording servisi', () => {
+  it('kayıt sürerken hasAnyActive true, durunca false', async () => {
+    const { recordings, db } = setup()
+    insertMeeting(db)
+    expect(recordings.hasAnyActive()).toBe(false)
+
+    const recording = await recordings.start('m1')
+    expect(recordings.hasAnyActive()).toBe(true)
+
+    recordings.stop(recording.id)
+    expect(recordings.hasAnyActive()).toBe(false)
+  })
+
   it('başlat, ses ekle, durdur: geçerli bir 16 kHz mono WAV dosyası ve DB satırları oluşur', async () => {
     const { recordings, db, recordingsDir, tick } = setup()
     insertMeeting(db)
