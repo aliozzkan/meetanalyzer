@@ -134,11 +134,11 @@
   --color-color-2: var(--color-2);
   --color-color-1: var(--color-1);
   @keyframes rainbow {
-  0% {
-    background-position: 0%;
+    0% {
+      background-position: 0%;
     }
-  100% {
-    background-position: 200%;
+    100% {
+      background-position: 200%;
     }
   }
 }
@@ -167,7 +167,16 @@
   }
 }
 
-/* macOS hiddenInset başlık çubuğu: boş alanlar pencereyi sürükler, içindeki kontroller tıklanabilir kalır. */
+/* Windows titleBarOverlay: pencere düğmeleri header'ın sağındadır; header onların altına girmez.
+   titlebar-area-* değerleri düğmelerin solundaki alanı verir (tam ekranda düğme yoktur, boşluk kalkar). */
+.app-window-controls-gap {
+  padding-right: calc(
+    100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 0.75rem
+  );
+}
+
+/* macOS hiddenInset ve Windows titleBarOverlay başlık çubuğu: boş alanlar pencereyi sürükler, içindeki
+   kontroller tıklanabilir kalır. */
 .app-drag {
   -webkit-app-region: drag;
 }

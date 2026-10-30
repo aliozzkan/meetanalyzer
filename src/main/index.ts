@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, dialog, powerSaveBlocker, session } from 'electron'
+import { app, shell, BrowserWindow, dialog, nativeTheme, powerSaveBlocker, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -29,6 +29,7 @@ import { recoverInterruptedRecordings } from './recordings/recovery'
 import { registerRecordingIpc } from './recordings/ipc'
 import { createRecordingService, type RecordingService } from './recordings/recording-service'
 import { forwardFullScreen, registerAppIpc } from './app/ipc'
+import { followThemeInTitleBar, titleBarOptions } from './app/title-bar'
 import { registerSettingsIpc } from './settings/ipc'
 import { createSettingsService } from './settings/settings-service'
 import { installAppMenu } from './menu'
@@ -46,10 +47,7 @@ function createWindow(): void {
     minHeight: 520,
     show: false,
     autoHideMenuBar: true,
-    // macOS: trafik ışıkları header'ın (44 px) solundaki boşluğa oturur; diğer platformlarda normal başlık çubuğu.
-    ...(process.platform === 'darwin'
-      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 14 } }
-      : {}),
+    ...titleBarOptions(process.platform, nativeTheme.shouldUseDarkColors),
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -88,8 +86,9 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  // Windows görev çubuğu gruplaması ve bildirimler bu kimliğe bakar; electron-builder.yml → appId ile aynı.
+  electronApp.setAppUserModelId('com.meetanalyzing.app')
+  followThemeInTitleBar()
 
   try {
     db = openDatabase(join(app.getPath('userData'), 'meetanalyzing.db'))

@@ -21,6 +21,7 @@ Temiz bir Windows kurulumu, GPU'lu ve GPU'suz makine ve gerçek kullanım gerekt
 - Recording sürerken `powercfg /requests` → SYSTEM altında uygulama; Recording durunca kaybolur.
 - Mikrofon gizlilik anahtarı kapalıyken Recording başlamaz, "Ayarları aç" doğru sayfayı açar.
 - Recording sürerken X → onay sorulur.
+- Görev çubuğunda uygulama kendi adı ve ikonuyla gruplanır (issue 04; `pnpm dev`'de doğrulanamıyor).
 - Kaldırma uygulamayı siler. Kullanıcı verisi (`%APPDATA%`) varsayılan electron-builder davranışıyla kalır; bu not edilir.
 
 ## Kabul kriterleri
