@@ -12,6 +12,12 @@ export function registerSettingsIpc(settings: SettingsService): void {
   ipcMain.handle('settings:set-default-language', (_event, language: Language) =>
     run(() => settings.setDefaultLanguage(language))
   )
+  ipcMain.handle('settings:get-system-audio-consent', () =>
+    run(() => settings.hasSystemAudioConsent())
+  )
+  ipcMain.handle('settings:accept-system-audio-consent', () =>
+    run(() => settings.acceptSystemAudioConsent())
+  )
   // Tema renderer'da saklanır; main yalnızca native menü, scrollbar ve dialog'lar uysun diye izler.
   ipcMain.handle('settings:set-theme', (_event, theme: Theme) =>
     run(() => {

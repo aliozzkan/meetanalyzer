@@ -1,6 +1,11 @@
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { composeApprovedText } from '../../shared/transcript'
+import {
+  composeApprovedBlocks,
+  formatApprovedBlocks,
+  type ApprovedBlock,
+  type ApprovedTranscript
+} from '../../shared/transcript'
 import type { Db } from '../db/database'
 import type { MeetingService } from '../meetings/meeting-service'
 import { TranscriptError, type TranscriptService } from './transcript-service'
@@ -8,7 +13,10 @@ import { TranscriptError, type TranscriptService } from './transcript-service'
 export interface ApprovalService {
   /** Transcribed Meeting'in Transcript'ini dondurur, Meeting'i Approved yapar ve ses dosyalarını siler. */
   approve: (meetingId: string) => void
+  /** Düz metin görünümü ("Sen: …" / "Diğerleri: …"); bu dilimden önce onaylananlarda eski tek metin. */
   getApprovedText: (meetingId: string) => string
+  /** Dondurulmuş Side blokları ve düz metin; eski tek metinli Transcript'ler tek bir Self bloğu sayılır. */
+  getApproved: (meetingId: string) => ApprovedTranscript
 }
 
 type RemoveDir = (path: string) => void
@@ -84,10 +92,10 @@ export function createApprovalService({
 
     // Metin ve durum tek işlemde yazılır; yarım onay kalmaz.
     db.transaction(() => {
-      const text = composeApprovedText(transcripts.get(meetingId))
+      const blocks = composeApprovedBlocks(transcripts.get(meetingId))
       db.prepare(
-        'INSERT INTO approved_transcripts (meeting_id, text, created_at) VALUES (?, ?, ?)'
-      ).run(meetingId, text, now())
+        'INSERT INTO approved_transcripts (meeting_id, text, blocks, created_at) VALUES (?, ?, ?, ?)'
+      ).run(meetingId, formatApprovedBlocks(blocks), JSON.stringify(blocks), now())
       meetings.transition(meetingId, 'approved')
     })()
 
@@ -95,13 +103,26 @@ export function createApprovalService({
     purgeApprovedAudio({ db, recordingsDir, meetingId, removeDir })
   }
 
-  function getApprovedText(meetingId: string): string {
+  function getRow(meetingId: string): { text: string; blocks: string | null } {
     const row = db
-      .prepare('SELECT text FROM approved_transcripts WHERE meeting_id = ?')
-      .get(meetingId) as { text: string } | undefined
+      .prepare('SELECT text, blocks FROM approved_transcripts WHERE meeting_id = ?')
+      .get(meetingId) as { text: string; blocks: string | null } | undefined
     if (!row) throw new TranscriptError('not-approved', 'Bu Meeting onaylanmamış.')
-    return row.text
+    return row
   }
 
-  return { approve, getApprovedText }
+  function getApprovedText(meetingId: string): string {
+    return getRow(meetingId).text
+  }
+
+  function getApproved(meetingId: string): ApprovedTranscript {
+    const { text, blocks } = getRow(meetingId)
+    if (blocks === null) {
+      // Side bilgisinden önce onaylanmış: yalnızca mikrofon vardı, tek bir Self bloğu.
+      return { blocks: text === '' ? [] : [{ side: 'self', text }], text }
+    }
+    return { blocks: JSON.parse(blocks) as ApprovedBlock[], text }
+  }
+
+  return { approve, getApprovedText, getApproved }
 }

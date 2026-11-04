@@ -1,5 +1,5 @@
 // AudioWorkletGlobalScope'ta (ana iş parçacığı dışında) çalışır. Giriş örneklerini BLOCK_SAMPLES'lık
-// bloklar halinde ana iş parçacığına gönderir. Kodlama ve parçalama mic-capture.ts'te yapılır.
+// bloklar halinde ana iş parçacığına gönderir. Kodlama ve parçalama pcm-pipeline.ts'te yapılır.
 export {}
 
 declare class AudioWorkletProcessor {

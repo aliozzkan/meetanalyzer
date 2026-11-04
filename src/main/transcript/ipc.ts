@@ -27,6 +27,9 @@ export function registerTranscriptIpc(
   ipcMain.handle('transcript:approved-text', (_event, meetingId: string) =>
     run(() => approval.getApprovedText(meetingId))
   )
+  ipcMain.handle('transcript:approved', (_event, meetingId: string) =>
+    run(() => approval.getApproved(meetingId))
+  )
   ipcMain.handle('transcript:revert', (_event, wordId: string) =>
     run(() => transcripts.revert(wordId))
   )

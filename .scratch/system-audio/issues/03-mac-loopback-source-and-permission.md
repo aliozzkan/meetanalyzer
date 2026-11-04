@@ -18,3 +18,12 @@ Spec: [../spec.md](../spec.md) → "1. Bilgilendirme ve izinler", "Ses kaynaklar
 - [ ] İzin reddedilmişse açılış "izin yok" hatasıyla biter ve arayüzde Sistem Ayarları yönlendirmesi görünür.
 - [ ] Recording sırasında Suspect Word dinletilirse o ses kaynağın çıktısına girmez.
 - [ ] Dönüşüm (48 kHz stereo → 16 kHz mono) için birim testi var.
+
+## Uygulama notu
+
+Kod tamamlandı, testler henüz çalıştırılmadı ([test-checklist.md](../test-checklist.md)). Kabul kriterleri testten sonra işaretlenecek.
+
+- Main: `setDisplayMediaRequestHandler` yalnızca `{ audio: 'loopback' }` verir (video yok); izin handler'ı `isPermissionAllowed` ile daraltıldı (`media` yalnızca ses, `display-capture` açık, diğerleri ret). `recordings:open-system-audio-settings` IPC'si `Privacy_AudioCapture` deep link'ini açar (doğrulanmadı).
+- Renderer: `MacLoopbackSource` önce `video: false`, `TypeError` gelirse `video: true` + video track'ini hemen durdurma yoluyla açar; açılışta `NotAllowedError` ya da 300 ms içinde `ended` track → `AudioPermissionError('system')`; kayıt sırasında `ended` → `onEnded`.
+- 48 kHz stereo → 16 kHz mono dönüşümü `AudioContext({ sampleRate: 16000 })` + tek kanallı worklet girişi ile yapılır (issue 01 ölçümüne göre değişebilir). Kabul kriterindeki dönüşüm birim testi bu yüzden yazılamadı; elle doğrulama test listesinde.
+- Kaynak `use-recorder`'a bilerek bağlanmadı: main henüz kanal yazmıyor, bağlansa sistem sesi `mic.wav`'a karışırdı. Bağlama issue 04'te.

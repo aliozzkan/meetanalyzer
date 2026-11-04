@@ -1,6 +1,6 @@
 import { closeSync, existsSync, ftruncateSync, openSync, rmSync, statSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { BLOCK_ALIGN, durationMsFromBytes } from '../../shared/audio'
+import { BLOCK_ALIGN, durationMsFromBytes, type AudioChannel } from '../../shared/audio'
 import type { Db } from '../db/database'
 import { resolveRecordingFile } from './recording-paths'
 import { markRecordingEnded } from './recording-rows'
@@ -9,23 +9,32 @@ import { WAV_HEADER_BYTES, writeWavHeader } from './wav'
 export interface RecoveryResult {
   repaired: number
   discarded: number
-  /** İşlenemeyen satırlar (geçersiz yol, dosya sistemi hatası); bunlar loglanır ve atlanır. */
+  /** İşlenemeyen Recording'ler (geçersiz yol, dosya sistemi hatası); bunlar loglanır ve atlanır. */
   failed: number
 }
 
 interface InterruptedRow {
   id: string
   started_at: number
+  kind: AudioChannel
   file_path: string
+}
+
+interface InterruptedRecording {
+  id: string
+  startedAt: number
+  channels: { kind: AudioChannel; filePath: string }[]
 }
 
 // Uygulama kayıt sırasında çöktüyse (kill -9, elektrik kesintisi) açılışta `ended_at`'i boş kalan
 // Recording'leri toparlar. Aktif Recording yalnızca bellekte izlenir; açılışta kalan her bu tür satır
 // bir çökme artığıdır. IPC kaydedilmeden önce çalıştırılmalıdır.
-//   - Ses içeren dosya: yarım örnek kesilir, header gerçek boyutla yeniden yazılır, süre ve `ended_at` yazılır.
-//   - Ses içermeyen (boş, header'ı yarım, dosyası hiç olmayan) dosya: Recording satırı, dosyası ve klasörüyle silinir.
-// Meeting durumuna dokunulmaz. Bir satırın hatası diğerlerinin toparlanmasını engellemez.
-// Her adım yeniden çalıştırmaya dayanıklıdır: dosya boyutundan yeniden hesaplanır; silmede önce dosya,
+//   - Her kanalın dosyası ayrı onarılır: yarım örnek kesilir, header gerçek boyutla yeniden yazılır. Recording'in
+//     süresi ve `ended_at`'i en kısa kanala göre belirlenir (kanallar aynı anda başladığı için fazlası eşlenemez).
+//   - Kanallardan biri ses içermiyorsa (boş, header'ı yarım, dosyası hiç olmayan) Recording bütün olarak satırı,
+//     dosyaları ve klasörüyle silinir: tek kanallı bir kayıt iki kanallı toplantıyı temsil etmez.
+// Meeting durumuna dokunulmaz. Bir Recording'in hatası diğerlerinin toparlanmasını engellemez.
+// Her adım yeniden çalıştırmaya dayanıklıdır: dosya boyutundan yeniden hesaplanır; silmede önce dosyalar,
 // sonra satır silinir, böylece arada çökme satırı bırakır ve sonraki açılış onu "dosya yok" diye temizler.
 export function recoverInterruptedRecordings({
   db,
@@ -36,38 +45,64 @@ export function recoverInterruptedRecordings({
 }): RecoveryResult {
   const rows = db
     .prepare(
-      `SELECT r.id, r.started_at, c.file_path
+      `SELECT r.id, r.started_at, c.kind, c.file_path
        FROM recordings r JOIN recording_channels c ON c.recording_id = r.id
-       WHERE r.ended_at IS NULL`
+       WHERE r.ended_at IS NULL
+       ORDER BY r.started_at, r.id, c.kind`
     )
     .all() as InterruptedRow[]
 
-  const result: RecoveryResult = { repaired: 0, discarded: 0, failed: 0 }
+  const recordings = new Map<string, InterruptedRecording>()
   for (const row of rows) {
+    const recording = recordings.get(row.id) ?? {
+      id: row.id,
+      startedAt: row.started_at,
+      channels: []
+    }
+    recording.channels.push({ kind: row.kind, filePath: row.file_path })
+    recordings.set(row.id, recording)
+  }
+
+  const result: RecoveryResult = { repaired: 0, discarded: 0, failed: 0 }
+  for (const recording of recordings.values()) {
     try {
-      const outcome = recoverRow(db, recordingsDir, row)
+      const outcome = recoverRecording(db, recordingsDir, recording)
       result[outcome] += 1
     } catch (error) {
-      console.error('Kayıt toparlanamadı:', row.id, error)
+      console.error('Kayıt toparlanamadı:', recording.id, error)
       result.failed += 1
     }
   }
   return result
 }
 
-function recoverRow(db: Db, recordingsDir: string, row: InterruptedRow): 'repaired' | 'discarded' {
-  const file = resolveRecordingFile(recordingsDir, row.file_path)
+function recoverRecording(
+  db: Db,
+  recordingsDir: string,
+  recording: InterruptedRecording
+): 'repaired' | 'discarded' {
+  // Önce tüm yollar doğrulanır; beklenmeyen bir yol hiçbir dosyaya dokunmadan hata verir.
+  const files = recording.channels.map((channel) => ({
+    kind: channel.kind,
+    path: resolveRecordingFile(recordingsDir, channel.filePath)
+  }))
+  const sizes = files.map((file) => ({ ...file, dataBytes: audioBytesIn(file.path) }))
 
-  const dataBytes = audioBytesIn(file)
-  if (dataBytes === 0) {
-    rmSync(dirname(file), { recursive: true, force: true })
-    db.prepare('DELETE FROM recordings WHERE id = ?').run(row.id)
+  if (sizes.some((file) => file.dataBytes === 0)) {
+    for (const dir of new Set(files.map((file) => dirname(file.path)))) {
+      rmSync(dir, { recursive: true, force: true })
+    }
+    db.prepare('DELETE FROM recordings WHERE id = ?').run(recording.id)
     return 'discarded'
   }
 
-  rewriteHeader(file, dataBytes)
-  const durationMs = durationMsFromBytes(dataBytes)
-  markRecordingEnded(db, row.id, row.started_at + durationMs, durationMs)
+  const durations: Partial<Record<AudioChannel, number>> = {}
+  for (const file of sizes) {
+    rewriteHeader(file.path, file.dataBytes)
+    durations[file.kind] = durationMsFromBytes(file.dataBytes)
+  }
+  const shortest = Math.min(...Object.values(durations))
+  markRecordingEnded(db, recording.id, recording.startedAt + shortest, durations)
   return 'repaired'
 }
 

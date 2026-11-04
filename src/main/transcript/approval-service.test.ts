@@ -64,7 +64,7 @@ describe('Approval servisi', () => {
 
     approval.approve('m1')
 
-    expect(approval.getApprovedText('m1')).toBe('Merhaba dünya nasılsın')
+    expect(approval.getApprovedText('m1')).toBe('Sen: Merhaba dünya nasılsın')
     expect(db.prepare("SELECT state, approved_at FROM meetings WHERE id = 'm1'").get()).toEqual({
       state: 'approved',
       approved_at: 99
@@ -81,7 +81,7 @@ describe('Approval servisi', () => {
 
     approval.approve('m1')
 
-    expect(approval.getApprovedText('m1')).toBe('Merhaba dünyaa nasılsın')
+    expect(approval.getApprovedText('m1')).toBe('Sen: Merhaba dünyaa nasılsın')
   })
 
   it('onaydan sonra Correction yazılamaz ve geri alınamaz; metin değişmez', () => {
@@ -94,7 +94,7 @@ describe('Approval servisi', () => {
     expect(() => transcripts.revert('w2')).toThrow(
       expect.objectContaining({ code: 'not-correctable' })
     )
-    expect(approval.getApprovedText('m1')).toBe('Merhaba dünyaa nasılsın')
+    expect(approval.getApprovedText('m1')).toBe('Sen: Merhaba dünyaa nasılsın')
   })
 
   it('yalnızca Transcribed Meeting onaylanır; iki kez onaylanamaz', () => {
@@ -131,7 +131,7 @@ describe('Approval servisi', () => {
 
     approval.approve('m1')
 
-    expect(approval.getApprovedText('m1')).toBe('Merhaba dünyaa nasılsın')
+    expect(approval.getApprovedText('m1')).toBe('Sen: Merhaba dünyaa nasılsın')
     expect(existsSync(audioFile)).toBe(true)
     expect(db.prepare('SELECT file_path FROM recording_channels').get()).toEqual({
       file_path: 'm1/r1/mic.wav'

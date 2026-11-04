@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { SILENT_MIC_PEAK_THRESHOLD, SILENT_MIC_WARNING_MS } from '@shared/audio'
+import {
+  MIC_SPEECH_MIN_MS,
+  SILENT_MIC_PEAK_THRESHOLD,
+  SILENT_MIC_WARNING_MS,
+  SYSTEM_AUDIO_HEARD_MIN_MS
+} from '@shared/audio'
 import type { RecordingSummary } from '@shared/recording'
-import type { MicCapture, MicCaptureHandlers } from './mic-capture'
+import { AudioPermissionError, type AudioSource, type AudioSourceHandlers } from './audio-source'
 import { createRecorderController, type RecorderDeps } from './recorder-controller'
 
 type Recordings = RecorderDeps['recordings']
@@ -13,7 +18,7 @@ function summary(id: string, meetingId: string): RecordingSummary {
 // Sınırdaki bağımlılıklar (ana süreç IPC'si ve mikrofon) sahtedir; controller'ın kendisi gerçektir.
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- tip, donanımın kendisinden çıkarılır
 function createHarness() {
-  const handlers: { current?: MicCaptureHandlers } = {}
+  const handlers: { current?: AudioSourceHandlers } = {}
   const calls: string[] = []
   const recordings = {
     start: vi.fn<Recordings['start']>(async (meetingId) => {
@@ -33,20 +38,20 @@ function createHarness() {
       return { ok: true, value: undefined }
     })
   }
-  const capture: MicCapture = {
+  const capture = {
     stop: vi.fn(async () => {
       calls.push('capture.stop')
     })
   }
-  const startMicCapture = vi.fn(async (h: MicCaptureHandlers): Promise<MicCapture> => {
+  const startMicCapture = vi.fn(async (h: AudioSourceHandlers): Promise<void> => {
     handlers.current = h
-    return capture
   })
+  const micSource: AudioSource = { start: startMicCapture, stop: capture.stop }
   const notifyError = vi.fn()
   const onRecordingsChanged = vi.fn()
   const controller = createRecorderController({
     recordings,
-    startMicCapture,
+    createSources: () => ({ mic: micSource }),
     notifyError,
     onRecordingsChanged
   })
@@ -87,8 +92,8 @@ describe('createRecorderController', () => {
     await controller.stop()
 
     expect(recordings.append.mock.calls).toEqual([
-      ['rec-1', first],
-      ['rec-1', second]
+      ['rec-1', first, 'mic'],
+      ['rec-1', second, 'mic']
     ])
   })
 
@@ -260,21 +265,54 @@ describe('createRecorderController', () => {
 
   it('mikrofon açılırken stopQuietly gelirse açılan yakalama kapatılır, boş Recording silinir', async () => {
     const { controller, recordings, capture, startMicCapture } = createHarness()
-    let openMic: (capture: MicCapture) => void = () => {}
+    let openMic: () => void = () => {}
     startMicCapture.mockImplementationOnce(
-      () => new Promise<MicCapture>((resolve) => (openMic = resolve))
+      () => new Promise<void>((resolve) => (openMic = resolve))
     )
 
     const starting = controller.start('m-1')
     await vi.waitFor(() => expect(startMicCapture).toHaveBeenCalled())
     const stopping = controller.stopQuietly()
-    openMic(capture)
+    openMic()
     await Promise.all([stopping, starting])
 
     expect(capture.stop).toHaveBeenCalledTimes(1)
     expect(recordings.discard).toHaveBeenCalledWith('rec-1')
     expect(recordings.stop).not.toHaveBeenCalled()
     expect(controller.getSnapshot()).toMatchObject({ state: 'idle', meetingId: null })
+  })
+
+  it('kayıt sürerken kaynak kesilirse Recording kendiliğinden biter ve kesilen kanal işaretlenir', async () => {
+    const { controller, recordings, capture, notifyError, handlers } = createHarness()
+    await controller.start('m-1')
+
+    handlers.current?.onEnded()
+    await vi.waitFor(() => expect(controller.getSnapshot().state).toBe('idle'))
+
+    expect(capture.stop).toHaveBeenCalledTimes(1)
+    expect(recordings.stop).toHaveBeenCalledTimes(1)
+    expect(notifyError).not.toHaveBeenCalled()
+    expect(controller.getSnapshot()).toMatchObject({
+      state: 'idle',
+      meetingId: null,
+      interrupted: { meetingId: 'm-1', channel: 'mic' }
+    })
+  })
+
+  it('kullanıcı durdurduktan sonra gelen onEnded yok sayılır; yeni Recording kopma işaretini temizler', async () => {
+    const { controller, recordings, handlers } = createHarness()
+    await controller.start('m-1')
+    await controller.stop()
+
+    handlers.current?.onEnded()
+    expect(controller.getSnapshot().interrupted).toBeNull()
+    expect(recordings.stop).toHaveBeenCalledTimes(1)
+
+    await controller.start('m-1')
+    handlers.current?.onEnded()
+    await vi.waitFor(() => expect(controller.getSnapshot().interrupted).not.toBeNull())
+    await controller.start('m-1')
+    expect(controller.getSnapshot().interrupted).toBeNull()
   })
 
   it('ses blokları seviye ve süreyi günceller; durdurunca sıfırlanır', async () => {
@@ -314,10 +352,10 @@ describe('createRecorderController', () => {
   })
 
   it('stopQuietly, başlatma iptal edilirken temizlik bitene kadar bekler', async () => {
-    const { controller, recordings, capture, startMicCapture } = createHarness()
-    let openMic: (capture: MicCapture) => void = () => {}
+    const { controller, recordings, startMicCapture } = createHarness()
+    let openMic: () => void = () => {}
     startMicCapture.mockImplementationOnce(
-      () => new Promise<MicCapture>((resolve) => (openMic = resolve))
+      () => new Promise<void>((resolve) => (openMic = resolve))
     )
     const starting = controller.start('m-1')
     await vi.waitFor(() => expect(startMicCapture).toHaveBeenCalled())
@@ -327,7 +365,7 @@ describe('createRecorderController', () => {
     await Promise.resolve()
     expect(settled).toBe(false)
 
-    openMic(capture)
+    openMic()
     await Promise.all([stopping, starting])
 
     // Meeting silmek için çağıran bu noktada devam eder: boş Recording çoktan silinmiş olmalı.
@@ -356,5 +394,204 @@ describe('createRecorderController', () => {
 
     expect(settled).toBe(true)
     expect(controller.getSnapshot().state).toBe('idle')
+  })
+})
+
+describe('createRecorderController: mikrofon + sistem sesi', () => {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type -- tip, donanımın kendisinden çıkarılır
+  function createTwoSourceHarness() {
+    const handlers: Partial<Record<'mic' | 'system', AudioSourceHandlers>> = {}
+    const calls: string[] = []
+    const makeSource = (channel: 'mic' | 'system'): AudioSource => ({
+      start: vi.fn(async (h: AudioSourceHandlers) => {
+        calls.push(`${channel}.start`)
+        handlers[channel] = h
+      }),
+      stop: vi.fn(async () => {
+        calls.push(`${channel}.stop`)
+      })
+    })
+    const mic = makeSource('mic')
+    const system = makeSource('system')
+    const recordings = {
+      start: vi.fn<Recordings['start']>(async (meetingId) => ({
+        ok: true,
+        value: summary('rec-1', meetingId)
+      })),
+      append: vi.fn<Recordings['append']>(async () => ({ ok: true, value: undefined })),
+      stop: vi.fn<Recordings['stop']>(async (recordingId) => ({
+        ok: true,
+        value: summary(recordingId, 'm-1')
+      })),
+      discard: vi.fn<Recordings['discard']>(async () => {
+        calls.push('recordings.discard')
+        return { ok: true, value: undefined }
+      })
+    }
+    const notifyError = vi.fn()
+    const controller = createRecorderController({
+      recordings,
+      createSources: () => ({ mic, system }),
+      notifyError,
+      onRecordingsChanged: vi.fn()
+    })
+    return { controller, recordings, mic, system, handlers, calls, notifyError }
+  }
+
+  it('önce mikrofon, sonra sistem sesi açılır; parçalar kendi kanalıyla gönderilir', async () => {
+    const { controller, recordings, handlers, calls } = createTwoSourceHarness()
+
+    await controller.start('m-1')
+    expect(calls).toEqual(['mic.start', 'system.start'])
+
+    const micChunk = new Uint8Array([1])
+    const systemChunk = new Uint8Array([2])
+    handlers.mic?.onChunk(micChunk)
+    handlers.system?.onChunk(systemChunk)
+    await controller.stop()
+
+    expect(recordings.append.mock.calls).toEqual([
+      ['rec-1', micChunk, 'mic'],
+      ['rec-1', systemChunk, 'system']
+    ])
+  })
+
+  it('sistem sesi izni yoksa açılan mikrofon kapatılır, boş Recording silinir ve izin uyarısı işaretlenir', async () => {
+    const { controller, system, notifyError, calls } = createTwoSourceHarness()
+    vi.mocked(system.start).mockRejectedValueOnce(new AudioPermissionError('system'))
+
+    await controller.start('m-1')
+
+    expect(calls).toEqual(['mic.start', 'mic.stop', 'recordings.discard'])
+    expect(notifyError).not.toHaveBeenCalled()
+    expect(controller.getSnapshot()).toMatchObject({
+      state: 'idle',
+      meetingId: null,
+      systemAudioDeniedFor: 'm-1',
+      microphoneDeniedFor: null
+    })
+  })
+
+  it('sistem sesi başka bir nedenle açılamazsa hata bildirilir ve Recording başlamaz', async () => {
+    const { controller, system, notifyError, recordings } = createTwoSourceHarness()
+    vi.mocked(system.start).mockRejectedValueOnce(new Error('cihaz yok'))
+
+    await controller.start('m-1')
+
+    expect(notifyError).toHaveBeenCalledExactlyOnceWith('Sistem sesi açılamadı: cihaz yok')
+    expect(recordings.discard).toHaveBeenCalledWith('rec-1')
+    expect(controller.getSnapshot()).toMatchObject({ state: 'idle', systemAudioDeniedFor: null })
+  })
+
+  it('tüm kaynaklar açılmadan gelen parçalar atılır (kanallar aynı anda başlasın)', async () => {
+    const { controller, recordings, system, handlers } = createTwoSourceHarness()
+    let openSystem: () => void = () => {}
+    vi.mocked(system.start).mockImplementationOnce(
+      (h) =>
+        new Promise<void>((resolve) => {
+          handlers.system = h
+          openSystem = resolve
+        })
+    )
+
+    const starting = controller.start('m-1')
+    await vi.waitFor(() => expect(handlers.mic).toBeDefined())
+    handlers.mic?.onChunk(new Uint8Array([9])) // sistem sesi henüz açılmadı
+    openSystem()
+    await starting
+    handlers.mic?.onChunk(new Uint8Array([1]))
+    await controller.stop()
+
+    expect(recordings.append.mock.calls).toEqual([['rec-1', new Uint8Array([1]), 'mic']])
+  })
+
+  it('sistem sesi kopunca Recording biter ve kesilen kanal system olarak işaretlenir', async () => {
+    const { controller, mic, system, handlers } = createTwoSourceHarness()
+    await controller.start('m-1')
+
+    handlers.system?.onEnded()
+    await vi.waitFor(() => expect(controller.getSnapshot().state).toBe('idle'))
+
+    expect(mic.stop).toHaveBeenCalledTimes(1)
+    expect(system.stop).toHaveBeenCalledTimes(1)
+    expect(controller.getSnapshot().interrupted).toEqual({ meetingId: 'm-1', channel: 'system' })
+  })
+
+  it('seviye ve süre: mikrofon "Sen" göstergesini, geçen süre iki kanalın en uzununu izler', async () => {
+    const { controller, handlers } = createTwoSourceHarness()
+    await controller.start('m-1')
+
+    handlers.mic?.onLevel(0.3, 100)
+    handlers.system?.onLevel(0.9, 300)
+
+    expect(controller.getSnapshot()).toMatchObject({ level: 0.3, elapsedMs: 300 })
+  })
+
+  it('bilgilendirme kabul edilmediyse (ana süreç reddeder) kabul uyarısı işaretlenir, hata bildirilmez', async () => {
+    const { controller, recordings, notifyError, mic } = createTwoSourceHarness()
+    recordings.start.mockResolvedValueOnce({
+      ok: false,
+      code: 'system-audio-consent-required',
+      message: 'bilgilendirme gerekli'
+    })
+
+    await controller.start('m-1')
+
+    expect(controller.getSnapshot()).toMatchObject({
+      state: 'idle',
+      meetingId: null,
+      consentRequiredFor: 'm-1'
+    })
+    expect(notifyError).not.toHaveBeenCalled()
+    expect(mic.start).not.toHaveBeenCalled()
+  })
+
+  it('mikrofonda konuşma var, sistem kanalı sessizse Recording bitince toplantı sesi uyarısı işaretlenir', async () => {
+    const { controller, handlers } = createTwoSourceHarness()
+    await controller.start('m-1')
+
+    handlers.mic?.onLevel(0.2, MIC_SPEECH_MIN_MS)
+    handlers.system?.onLevel(0, 60_000)
+    await controller.stop()
+
+    expect(controller.getSnapshot().quietMeetingFor).toBe('m-1')
+  })
+
+  it('diğer katılımcılar konuştuysa toplantı sesi uyarısı işaretlenmez', async () => {
+    const { controller, handlers } = createTwoSourceHarness()
+    await controller.start('m-1')
+
+    handlers.mic?.onLevel(0.2, MIC_SPEECH_MIN_MS)
+    handlers.system?.onLevel(0.1, SYSTEM_AUDIO_HEARD_MIN_MS)
+    await controller.stop()
+
+    expect(controller.getSnapshot().quietMeetingFor).toBeNull()
+  })
+
+  it('kaynak kopmasıyla biten Recording için toplantı sesi uyarısı verilmez; yeni Recording uyarıyı temizler', async () => {
+    const { controller, handlers } = createTwoSourceHarness()
+    await controller.start('m-1')
+    handlers.mic?.onLevel(0.2, MIC_SPEECH_MIN_MS)
+    handlers.system?.onEnded()
+    await vi.waitFor(() => expect(controller.getSnapshot().state).toBe('idle'))
+    expect(controller.getSnapshot().quietMeetingFor).toBeNull()
+
+    await controller.start('m-1')
+    handlers.mic?.onLevel(0.2, MIC_SPEECH_MIN_MS)
+    await controller.stop()
+    expect(controller.getSnapshot().quietMeetingFor).toBe('m-1')
+
+    await controller.start('m-1')
+    expect(controller.getSnapshot().quietMeetingFor).toBeNull()
+  })
+
+  it('sistem sesi kaynağı olmayan Recording için toplantı sesi uyarısı verilmez', async () => {
+    const { controller, handlers } = createHarness()
+    await controller.start('m-1')
+
+    handlers.current?.onLevel(0.2, MIC_SPEECH_MIN_MS)
+    await controller.stop()
+
+    expect(controller.getSnapshot().quietMeetingFor).toBeNull()
   })
 })

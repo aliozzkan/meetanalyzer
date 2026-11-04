@@ -32,7 +32,7 @@ interface WordAudioRow {
 
 export type WordAudioReader = (wordId: string) => WordAudio
 
-// Bir Suspect Word çevresindeki sesi `mic.wav`'dan keser. Dosya yolu yalnızca DB'deki kelimeden türetilir ve
+// Bir Suspect Word çevresindeki sesi kelimenin kendi kanalının dosyasından (`mic.wav` ya da `system.wav`) keser. Dosya yolu yalnızca DB'deki kelimeden türetilir ve
 // `resolveRecordingFile` ile doğrulanır; renderer ham yol göndermez ve almaz.
 export function createWordAudioReader({
   db,
@@ -54,7 +54,7 @@ export function createWordAudioReader({
          FROM words w
          JOIN segments s ON s.id = w.segment_id
          JOIN recordings r ON r.id = s.recording_id
-         LEFT JOIN recording_channels c ON c.recording_id = r.id AND c.kind = 'mic'
+         LEFT JOIN recording_channels c ON c.recording_id = r.id AND c.kind = s.channel
          WHERE w.id = ?`
       )
       .get(wordId) as WordAudioRow | undefined

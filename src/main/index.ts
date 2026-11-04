@@ -25,6 +25,7 @@ import { whisperThreads } from './transcription/whisper-args'
 import { hasPendingTranscription } from '../shared/transcription'
 import { createPowerGuard } from './power/power-guard'
 import { requestMicrophoneAccess } from './recordings/microphone'
+import { installSystemAudioCapture, isPermissionAllowed } from './recordings/system-audio'
 import { recoverInterruptedRecordings } from './recordings/recovery'
 import { registerRecordingIpc } from './recordings/ipc'
 import { createRecordingService, type RecordingService } from './recordings/recording-service'
@@ -134,7 +135,14 @@ app.whenReady().then(() => {
 
   // Uyku engeli sebepleri (kayıt, ileride transcription) tek bir güç modülünde toplanır.
   const power = createPowerGuard(powerSaveBlocker)
-  recordings = createRecordingService({ db, recordingsDir, requestMicrophoneAccess, power })
+  const settings = createSettingsService({ db })
+  recordings = createRecordingService({
+    db,
+    recordingsDir,
+    requestMicrophoneAccess,
+    hasSystemAudioConsent: settings.hasSystemAudioConsent,
+    power
+  })
 
   // Transcription modeli: indirme yalnızca kullanıcı isteğiyle başlar (otomatik indirme yok).
   const modelsDir = join(app.getPath('userData'), 'models')
@@ -201,17 +209,17 @@ app.whenReady().then(() => {
     })
   )
 
-  registerSettingsIpc(createSettingsService({ db: database }))
+  registerSettingsIpc(settings)
   const appIpc = registerAppIpc({ dataDir: app.getPath('userData'), createWindow })
   installAppMenu(appIpc.sendCommand)
 
-  // Renderer yalnızca mikrofon izni isteyebilir; kamera ve diğer izin istekleri reddedilir.
+  // Renderer yalnızca mikrofon ve sistem sesi (yalnızca ses) isteyebilir; kamera ve diğer izin istekleri reddedilir.
   session.defaultSession.setPermissionRequestHandler(
     (_webContents, permission, callback, details) => {
-      const wantsVideo = 'mediaTypes' in details && details.mediaTypes?.includes('video')
-      callback(permission === 'media' && !wantsVideo)
+      callback(isPermissionAllowed(permission, 'mediaTypes' in details ? details : {}))
     }
   )
+  installSystemAudioCapture(session.defaultSession)
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

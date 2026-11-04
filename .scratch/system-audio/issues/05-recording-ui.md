@@ -19,3 +19,12 @@ Spec: [../spec.md](../spec.md) → "1. Bilgilendirme ve izinler", "2. Recording"
 - [ ] Kayıt sırasında çıkış cihazı değişince ya da izin geri alınınca kullanıcı nedeni görür ve tek tıkla yeni Recording başlatabilir.
 - [ ] Sistem kanalı baştan sona sessiz bir Recording'den sonra uyarı görünür; diğer katılımcıların konuştuğu Recording'de görünmez.
 - [ ] Sessiz toplantı kararı için birim testi var.
+
+## Uygulama notu
+
+Kod tamamlandı, testler henüz çalıştırılmadı ([test-checklist.md](../test-checklist.md)). Kabul kriterleri testten sonra işaretlenecek.
+
+- Bilgilendirme: kabul `settings` tablosunda (`system_audio_consent`); **kapı main'dedir** (`recording-service.start` → `system-audio-consent-required`), arayüz yalnızca uyarıyı gösterir ve "Anladım, kaydı başlat" ile kabul edip aynı tıklamayla başlatır. Metin spec'teki üç maddeyi (diğer katılımcılar, sorumluluk, ses yalnızca cihazda) içerir.
+- İki gösterge Meeting detayında ("Sen", "Toplantı"); header'daki kayıt pill'i yalnızca süre gösteriyordu, seviye eklenmedi.
+- Kopma: `interrupted` ile "Sistem sesi kesildi" / "Mikrofon kesildi" uyarısı ve "Yeni Recording başlat" düğmesi.
+- Sessiz toplantı: karar `shared/meeting-silence.ts` (saf, testli); eşikler `docs/tuning.md`'de yeni satır. Kopmayla biten Recording için verilmez.

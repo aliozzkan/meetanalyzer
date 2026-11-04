@@ -4,11 +4,13 @@ import { join } from 'node:path'
 import type { Db } from '../db/database'
 import type { PowerGuard } from '../power/power-guard'
 import {
+  AUDIO_CHANNELS,
   AUDIO_FORMAT,
   BLOCK_ALIGN,
   BYTES_PER_SECOND,
   PCM_CHUNK_MS,
-  durationMsFromBytes
+  durationMsFromBytes,
+  type AudioChannel
 } from '../../shared/audio'
 import type { RecordingErrorCode, RecordingSummary } from '../../shared/recording'
 import { markRecordingEnded } from './recording-rows'
@@ -30,6 +32,8 @@ export interface RecordingServiceOptions {
   db: Db
   recordingsDir: string
   requestMicrophoneAccess: () => Promise<MicrophoneAccess>
+  // Sistem sesi kaydı bilgilendirmesi kabul edildi mi (settings)? Zorunludur: unutulursa kapı sessizce açık kalırdı.
+  hasSystemAudioConsent: () => boolean
   // Kayıt sürerken Mac'in uykuya geçmesini engeller. Zorunludur: unutulursa engel sessizce kapanırdı.
   power: PowerGuard
   now?: () => number
@@ -37,7 +41,8 @@ export interface RecordingServiceOptions {
 
 export interface RecordingService {
   start: (meetingId: string) => Promise<RecordingSummary>
-  append: (recordingId: string, pcm: Buffer) => void
+  // Parça, Recording'in verilen kanalının dosyasına yazılır (varsayılan: mikrofon).
+  append: (recordingId: string, pcm: Buffer, channel?: AudioChannel) => void
   stop: (recordingId: string) => RecordingSummary
   // Başlamış ama kullanılamayan bir Recording'i (ör. mikrofon açılamadı) satırı ve dosyasıyla siler.
   discard: (recordingId: string) => void
@@ -48,13 +53,20 @@ export interface RecordingService {
   abortMeeting: (meetingId: string) => void
 }
 
-interface ActiveRecording {
+// Bir kanalın açık dosyası: dosya düzeni <meetingId>/<recordingId>/<kanal>.wav
+interface ActiveChannel {
   fd: number
+  dataBytes: number
+}
+
+interface ActiveRecording {
+  channels: Record<AudioChannel, ActiveChannel>
   meetingId: string
   seq: number
   startedAt: number
-  dataBytes: number
 }
+
+const fileName = (channel: AudioChannel): string => `${channel}.wav`
 
 // Renderer'dan gelen tek bir parça için üst sınır: parça süresinin iki katı. Normal parçalar bundan
 // küçüktür; ele geçirilmiş bir renderer'ın diski doldurmasını sınırlar.
@@ -64,6 +76,7 @@ export function createRecordingService({
   db,
   recordingsDir,
   requestMicrophoneAccess,
+  hasSystemAudioConsent,
   power,
   now = Date.now
 }: RecordingServiceOptions): RecordingService {
@@ -88,13 +101,19 @@ export function createRecordingService({
     active.delete(id)
     syncPower()
   }
-  // Dosya kapatılamasa bile (ör. geçersiz tanıtıcı) kayıt aktif kümeden çıkar ve engel bırakılır.
+  // Dosyalar kapatılamasa bile (ör. geçersiz tanıtıcı) kayıt aktif kümeden çıkar ve engel bırakılır;
+  // bir kanalın kapatılamaması diğerinin kapatılmasını engellemez (ilk hata en sonda fırlatılır).
   function closeAndRemove(id: string, recording: ActiveRecording): void {
-    try {
-      closeSync(recording.fd)
-    } finally {
-      removeActive(id)
+    let failure: unknown
+    for (const channel of AUDIO_CHANNELS) {
+      try {
+        closeSync(recording.channels[channel].fd)
+      } catch (error) {
+        failure ??= error
+      }
     }
+    removeActive(id)
+    if (failure) throw failure
   }
 
   function hasActive(meetingId: string): boolean {
@@ -115,9 +134,26 @@ export function createRecordingService({
     }
   }
 
+  // Açılış sırasında hata olursa o ana kadar açılan dosyaları kapatır.
+  function closeOpened(channels: Partial<Record<AudioChannel, ActiveChannel>>): void {
+    for (const channel of Object.values(channels)) {
+      try {
+        closeSync(channel.fd)
+      } catch {
+        // kapatılamayan dosya açılış hatasını gölgelemesin
+      }
+    }
+  }
+
   async function start(meetingId: string): Promise<RecordingSummary> {
     // Kullanıcıya izin sorusu göstermeden önce kuralları kontrol et.
     assertCanStart(meetingId)
+    if (!hasSystemAudioConsent()) {
+      throw new RecordingError(
+        'system-audio-consent-required',
+        'Kayıt başlamadan önce sistem sesi kaydı bilgilendirmesini kabul etmelisin.'
+      )
+    }
     if ((await requestMicrophoneAccess()) === 'denied') {
       throw new RecordingError(
         'microphone-denied',
@@ -127,12 +163,21 @@ export function createRecordingService({
     // İzin penceresi açıkken durum değişmiş olabilir (ör. Meeting silindi, ikinci istek geldi).
     assertCanStart(meetingId)
     const id = randomUUID()
-    const relativePath = join(meetingId, id, 'mic.wav')
     const dir = join(recordingsDir, meetingId, id)
     mkdirSync(dir, { recursive: true })
-    const fd = openSync(join(dir, 'mic.wav'), 'w')
     // Gerçek boyut bilinmediği için 0 ile yazılır; stop() header'ı gerçek boyutla yeniden yazar.
-    writeSync(fd, createWavHeader({ ...AUDIO_FORMAT, dataBytes: 0 }))
+    const channels = {} as Record<AudioChannel, ActiveChannel>
+    try {
+      for (const channel of AUDIO_CHANNELS) {
+        const fd = openSync(join(dir, fileName(channel)), 'w')
+        channels[channel] = { fd, dataBytes: 0 }
+        writeSync(fd, createWavHeader({ ...AUDIO_FORMAT, dataBytes: 0 }))
+      }
+    } catch (error) {
+      closeOpened(channels)
+      rmSync(dir, { recursive: true, force: true })
+      throw error
+    }
 
     const seq = (
       db
@@ -145,17 +190,20 @@ export function createRecordingService({
         db.prepare(
           'INSERT INTO recordings (id, meeting_id, seq, started_at) VALUES (?, ?, ?, ?)'
         ).run(id, meetingId, seq, startedAt)
-        db.prepare(
-          "INSERT INTO recording_channels (recording_id, kind, file_path) VALUES (?, 'mic', ?)"
-        ).run(id, relativePath)
+        const insertChannel = db.prepare(
+          'INSERT INTO recording_channels (recording_id, kind, file_path) VALUES (?, ?, ?)'
+        )
+        for (const channel of AUDIO_CHANNELS) {
+          insertChannel.run(id, channel, join(meetingId, id, fileName(channel)))
+        }
       })()
     } catch (error) {
-      closeSync(fd)
+      closeOpened(channels)
       rmSync(dir, { recursive: true, force: true })
       throw error
     }
 
-    addActive(id, { fd, meetingId, seq, startedAt, dataBytes: 0 })
+    addActive(id, { channels, meetingId, seq, startedAt })
     return { id, meetingId, seq, startedAt, endedAt: null, durationMs: null }
   }
 
@@ -167,34 +215,51 @@ export function createRecordingService({
     return recording
   }
 
-  function append(recordingId: string, pcm: Buffer): void {
+  function append(recordingId: string, pcm: Buffer, channel: AudioChannel = 'mic'): void {
     const recording = getActive(recordingId)
-    if (pcm.length % BLOCK_ALIGN !== 0 || pcm.length > MAX_CHUNK_BYTES) {
+    // IPC'den gelir: kanal adına güvenilmez.
+    const target = AUDIO_CHANNELS.includes(channel) ? recording.channels[channel] : undefined
+    if (!target || pcm.length % BLOCK_ALIGN !== 0 || pcm.length > MAX_CHUNK_BYTES) {
       throw new RecordingError('invalid-chunk', 'Geçersiz ses parçası.')
     }
-    writeSync(recording.fd, pcm)
-    recording.dataBytes += pcm.length
+    writeSync(target.fd, pcm)
+    target.dataBytes += pcm.length
   }
 
   function stop(recordingId: string): RecordingSummary {
     const recording = getActive(recordingId)
     try {
-      writeWavHeader(recording.fd, recording.dataBytes)
+      // Bir kanalın header'ı yazılamasa bile diğerinin yazılması denenir (ilk hata en sonda fırlatılır).
+      let failure: unknown
+      for (const channel of AUDIO_CHANNELS) {
+        try {
+          writeWavHeader(recording.channels[channel].fd, recording.channels[channel].dataBytes)
+        } catch (error) {
+          failure ??= error
+        }
+      }
+      if (failure) throw failure
     } finally {
-      // Header yazılamasa bile tanıtıcı kapanır ve Recording aktif kalıp Meeting'i kilitlemez.
+      // Header yazılamasa bile tanıtıcılar kapanır ve Recording aktif kalıp Meeting'i kilitlemez.
       closeAndRemove(recordingId, recording)
     }
 
     const endedAt = now()
-    const durationMs = durationMsFromBytes(recording.dataBytes)
-    markRecordingEnded(db, recordingId, endedAt, durationMs)
+    const durations = Object.fromEntries(
+      AUDIO_CHANNELS.map((channel) => [
+        channel,
+        durationMsFromBytes(recording.channels[channel].dataBytes)
+      ])
+    ) as Record<AudioChannel, number>
+    markRecordingEnded(db, recordingId, endedAt, durations)
     return {
       id: recordingId,
       meetingId: recording.meetingId,
       seq: recording.seq,
       startedAt: recording.startedAt,
       endedAt,
-      durationMs
+      // Süre, daha uzun süren kanala göre bildirilir.
+      durationMs: Math.max(...Object.values(durations))
     }
   }
 

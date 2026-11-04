@@ -19,3 +19,12 @@ Davranış değişikliği yok: mikrofon kaydı bugünkü gibi çalışır, ama k
 - [ ] Mikrofon kaydı, seviye göstergesi, sessiz mikrofon uyarısı ve durdurma bugünkü gibi çalışır.
 - [ ] `recorder-controller` testleri sahte bir `AudioSource` ile çalışır; `onEnded` senaryosu test edilir.
 - [ ] Kaydın IPC, WAV ve kurtarma tarafında kaynak türüne özel kod yoktur.
+
+## Uygulama notu
+
+Kod tamamlandı, testler henüz çalıştırılmadı ([test-checklist.md](../test-checklist.md)). Kabul kriterleri testten sonra işaretlenecek.
+
+- `AudioSource { start(handlers), stop() }` + `AudioSourceHandlers { onChunk, onLevel, onEnded }`. Ortak PCM hattı `pcm-pipeline.ts`'e çıkarıldı (sistem sesi aynısını kullanacak); `mic-capture.ts` → `mic-source.ts`.
+- `recorder-controller` birden çok kaynağı kanal adıyla yönetir (`createSources`). Tüm kaynaklar açılana kadar gelen parçalar atılır (kanallar aynı anda başlasın); açılışta biri başarısız olursa açılanlar kapatılır ve boş Recording silinir.
+- `onEnded` → Recording kendiliğinden biter, snapshot'ta `interrupted: { meetingId, channel }` kalır (arayüzü issue 05).
+- Main tarafı (IPC, WAV, kurtarma) hâlâ yalnızca `mic` yazıyor; kanal desteği issue 04'te. Preload `append` artık `channel` alır, main şimdilik yok sayar.

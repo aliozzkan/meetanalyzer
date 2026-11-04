@@ -14,6 +14,7 @@ export interface RecordingSummary {
 
 export type RecordingErrorCode =
   | 'microphone-denied'
+  | 'system-audio-consent-required' // sistem sesi kaydı bilgilendirmesi henüz kabul edilmedi
   | 'meeting-not-recording'
   | 'recording-already-active'
   | 'unknown-recording'
