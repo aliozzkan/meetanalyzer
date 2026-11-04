@@ -10,10 +10,15 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
   - '!{.cache,.scratch,docs,scripts}/**'
+  # whisper-cli platforma göre ayrıdır; her platform yalnızca kendi klasörünü extraResources ile bin/ olarak alır.
+  - '!resources/bin/**'
 asarUnpack:
   - resources/**
 win:
   executableName: meetanalyzing
+  extraResources:
+    - from: resources/bin/win32-x64
+      to: bin
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -21,6 +26,9 @@ nsis:
   createDesktopShortcut: always
 mac:
   entitlementsInherit: build/entitlements.mac.plist
+  extraResources:
+    - from: resources/bin/darwin-arm64
+      to: bin
   extendInfo:
     NSMicrophoneUsageDescription: Meetanalyzing, toplantı seslerini kaydetmek için mikrofonunu kullanır. / Meetanalyzing uses your microphone to record meeting audio.
   notarize: false

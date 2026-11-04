@@ -1,6 +1,6 @@
 import { ipcMain, shell } from 'electron'
 import { toIpcResult } from '../ipc-result'
-import { MICROPHONE_SETTINGS_URL } from './microphone'
+import { microphoneSettingsUrl } from './microphone'
 import { RecordingError, type RecordingService } from './recording-service'
 
 const run = <T>(
@@ -24,7 +24,8 @@ export function registerRecordingIpc(recordings: RecordingService): void {
   ipcMain.handle('recordings:discard', (_event, recordingId: string) =>
     run(() => recordings.discard(recordingId))
   )
-  ipcMain.handle('recordings:open-microphone-settings', () =>
-    shell.openExternal(MICROPHONE_SETTINGS_URL)
-  )
+  ipcMain.handle('recordings:open-microphone-settings', async () => {
+    const url = microphoneSettingsUrl(process.platform)
+    if (url) await shell.openExternal(url)
+  })
 }

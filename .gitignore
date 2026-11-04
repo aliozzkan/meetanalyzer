@@ -5,7 +5,7 @@ out
 .eslintcache
 *.log*
 
-# scripts/build-whisper.sh çıktıları
+# scripts/build-whisper.mjs çıktıları
 resources/bin/
 resources/models/
 .cache/

@@ -16,7 +16,7 @@ Terimler [GLOSSARY.md](../../GLOSSARY.md), durumlar [docs/meeting-lifecycle.md](
 
 ## Kapsam
 
-- **Platform:** yalnızca macOS 14.2+, Apple Silicon. Windows ileride ([backlog 03](../backlog/issues/03-windows-support.md)); ses kaynakları bunun için adapter arkasında.
+- **Platform:** yalnızca macOS 14.2+, Apple Silicon. Windows [ayrı dilimde](../windows-support/spec.md) (issue 07 ve 08); ses kaynakları bunun için adapter arkasında.
 - **Electron 45'e geçiş** bu dilimin içinde yapılır.
 - **Ne kaydedilir:** varsayılan çıkış cihazındaki tüm sistem sesi (toplantı uygulaması, bildirimler, müzik). Yalnızca toplantı uygulamasını seçmek kapsam dışı. Uygulamanın kendi sesi (Suspect Word dinletme) kayda girmez.
 

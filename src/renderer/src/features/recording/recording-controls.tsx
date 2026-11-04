@@ -2,9 +2,13 @@ import { MicIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@renderer/components/ui/alert'
 import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
+import { PLATFORM } from '@renderer/lib/platform'
 import { formatElapsed } from './format-elapsed'
+import { microphonePermissionCopy } from './microphone-permission'
 import { isBusyWith } from './recorder-controller'
 import type { Recorder } from './use-recorder'
+
+const permissionCopy = microphonePermissionCopy(PLATFORM)
 
 interface Props {
   recorder: Recorder
@@ -63,14 +67,16 @@ export function RecordingControls({ recorder, meetingId }: Props): React.JSX.Ele
           <TriangleAlertIcon />
           <AlertTitle>Mikrofon erişimi verilmedi</AlertTitle>
           <AlertDescription>
-            <p>
-              Kayıt alabilmek için Meetanalyzing&apos;e mikrofon izni vermelisin. İzni Sistem
-              Ayarları &gt; Gizlilik ve Güvenlik &gt; Mikrofon bölümünden açabilirsin.
-            </p>
+            <p>{permissionCopy.instructions}</p>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" onClick={() => void window.api.recordings.openMicrophoneSettings()}>
-                Sistem Ayarları&apos;nı aç
-              </Button>
+              {permissionCopy.settingsButton && (
+                <Button
+                  size="sm"
+                  onClick={() => void window.api.recordings.openMicrophoneSettings()}
+                >
+                  {permissionCopy.settingsButton}
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={start} disabled={busy}>
                 Tekrar dene
               </Button>

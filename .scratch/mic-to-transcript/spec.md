@@ -39,7 +39,7 @@ Terimler [GLOSSARY.md](../../GLOSSARY.md), durumlar ve geçişler [docs/meeting-
 - Closed bir Meeting'de kullanıcı "Transcribe"a basar → Meeting Transcribing olur ve Transcription Queue'ya girer.
 - Tek işçi, FIFO. Bekleyen Meeting UI'da "Sırada", işlenen Meeting ilerlemesiyle gösterilir.
 - Başka bir Meeting'in Recording'i sürerken de Transcription devam eder.
-- Transcribing sırasında "Mac'in kapağını kapatırsanız işlem duraklar" uyarısı görünür.
+- Transcribing sırasında "Bilgisayar uyku moduna geçerse (ör. dizüstünün kapağını kapatırsan) işlem duraklar" uyarısı görünür. Uyku engeli boşta kalma uykusunu önler; kapak kapatma ya da elle uyutma onu aşar.
 - Recording'ler sırayla, Recording başına bir whisper çağrısıyla işlenir; her biri bitince sonucu kalıcı olarak yazılır.
 - Hata → Meeting hata mesajıyla Closed'a döner; tamamlanmış Recording'lerin sonuçları korunur, yeniden başlatmada yalnızca kalanlar işlenir.
 

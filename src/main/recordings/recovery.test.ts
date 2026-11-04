@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -197,18 +205,9 @@ describe('recoverInterruptedRecordings', () => {
 
   it('bir satır işlenemese de diğer Recording’ler onarılmaya devam eder', () => {
     const ctx = setup()
-    // mic.wav bir dosya değil klasör: açılırken hata verir
-    mkdirSync(join(ctx.recordingsDir, 'm1', 'bozuk', 'mic.wav'), { recursive: true })
-    ctx.db
-      .prepare(
-        "INSERT INTO recordings (id, meeting_id, seq, started_at) VALUES ('bozuk', 'm1', 1, 1)"
-      )
-      .run()
-    ctx.db
-      .prepare(
-        "INSERT INTO recording_channels (recording_id, kind, file_path) VALUES ('bozuk', 'mic', 'm1/bozuk/mic.wav')"
-      )
-      .run()
+    // Salt okunur dosya: onarım için yazmaya açılırken hata verir (macOS'ta EACCES, Windows'ta EPERM).
+    const broken = interruptedRecording(ctx, { id: 'bozuk', data: TWO_SECONDS })
+    chmodSync(broken.file, 0o444)
     const healthy = interruptedRecording(ctx, { id: 'saglam', data: TWO_SECONDS })
 
     const result = recoverInterruptedRecordings(ctx)

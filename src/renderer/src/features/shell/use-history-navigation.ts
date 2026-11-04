@@ -1,8 +1,10 @@
 import { useCallback, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router'
+import { IS_MAC } from '@renderer/lib/platform'
 import {
   appEntryCount,
   historyAvailability,
+  historyShortcut,
   type HistoryAvailability,
   type NavigationPosition
 } from './history-navigation'
@@ -12,8 +14,8 @@ export interface HistoryNavigation extends HistoryAvailability {
   forward: () => void
 }
 
-// Geri/ileri: header'daki oklar ve ⌘[ / ⌘] aynı işi yapar (Electron'da tarayıcı gibi varsayılan geçmiş
-// kısayolu yoktur). Her gezinmede konum değiştiği için okların durumu yeniden okunur.
+// Geri/ileri: header'daki oklar ve kısayol (macOS'ta ⌘[ / ⌘], diğerlerinde Alt+← / Alt+→) aynı işi yapar
+// (Electron'da tarayıcı gibi varsayılan geçmiş kısayolu yoktur). Her gezinmede konum değiştiği için okların durumu yeniden okunur.
 export function useHistoryNavigation(): HistoryNavigation {
   const navigate = useNavigate()
   useLocation()
@@ -22,15 +24,11 @@ export function useHistoryNavigation(): HistoryNavigation {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (!event.metaKey || event.shiftKey) return
-      // Türkçe Q klavyede '[' Option ile üretilir: karakter (key) ya da fiziksel tuş (code) eşleşmesi yeter.
-      if (event.key === '[' || event.code === 'BracketLeft') {
-        event.preventDefault()
-        back()
-      } else if (event.key === ']' || event.code === 'BracketRight') {
-        event.preventDefault()
-        forward()
-      }
+      const direction = historyShortcut(event, IS_MAC)
+      if (!direction) return
+      event.preventDefault()
+      if (direction === 'back') back()
+      else forward()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)

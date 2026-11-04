@@ -25,11 +25,11 @@ export const WHISPER_MIN_THREADS = 2
 // (--vad) ADR-0002 gereği her zaman açıktır.
 export const WHISPER_VAD_SAMPLES_OVERLAP_S = 0.1
 
-// docs/tuning.md → VAD modeli. Dosya adı scripts/build-whisper.sh içindeki VAD_MODEL_FILE ile
+// docs/tuning.md → VAD modeli. Dosya adı scripts/build-whisper.mjs içindeki VAD_MODEL_FILE ile
 // aynı olmalıdır; birini değiştirirken diğerini de güncelle.
 export const WHISPER_VAD_MODEL_FILE = 'ggml-silero-v6.2.0.bin'
 
-// docs/tuning.md → whisper.cpp sürümü. Hakkında ekranında gösterilir; scripts/build-whisper.sh içindeki
+// docs/tuning.md → whisper.cpp sürümü. Hakkında ekranında gösterilir; scripts/build-whisper.mjs içindeki
 // WHISPER_CPP_TAG ile aynı olmalıdır (src/main/whisper/version.test.ts denetler).
 export const WHISPER_CPP_VERSION = 'v1.9.5'
 
