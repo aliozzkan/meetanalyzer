@@ -16,3 +16,12 @@ Kulaklıksız bir toplantıda Others'ın sesi hem sistem sesi kanalına (temiz) 
 
 - Yankıyı whisper sistem sesinden farklı duyarsa (ör. tek harf farkı) mikrofon kanalında artık kelimeler Self olarak kalabilir; eşleşme kuralı gevşetildikçe bu azalır ama kullanıcının Others'ı aynı anda tekrarladığı gerçek sözleri silinme riski artar.
 - Tekilleştirme Transcript'in parçası olduğundan atılan mikrofon kelimeleri `words` tablosunda kalır, yalnızca Transcript'e girmez; ham whisper çıktısının değişmezliği korunur.
+
+## Ölçüm (system-audio issue 07, ilk gerçek kulaklıksız kayıt)
+
+28 sn'lik kayıt (hoparlörden Safari videosu, araya kullanıcının kısa sözleri): mikrofon kanalı videonun tüm cümlelerini de içeriyordu ve kelime eşleşmesi bunların yaklaşık %95'ini ayıkladı; kullanıcının üç gerçek sözü ("Yapma ya.", "Bak bak.", "Olur yaparım.") korundu, yanlış atılan gerçek söz yoktu. Kalan iki yankı parçası ikisi de eşleşme dışı kenar durumlardı: (1) yankılı ses bir kelimeyi farklı tanıdı ("başlı" ↔ "uçlu"), (2) sistem kaydı mikrofondan 0,18 sn önce bittiği için son iki kelimenin sistem kanalında karşılığı yoktu. Yankı baskın mikrofon segmentlerinin (≥ 3 yankı kelimesi ve ≥ %60) kalan kelimelerini de yankı sayan bir kural eklendi (`docs/tuning.md` → Yankı segmenti). Tek bir kayıtla ayarlandı; daha çok kayıtla (özellikle Others ile Self'in aynı anda konuştuğu) yeniden ölçülmeli.
+
+
+### İkinci ölçüm (21 sn, hoparlör, Self videonun üstüne "Bu benim sesim." dedi)
+
+Video cümlelerinin tamamı "Others" altında tek kez göründü ve Self'e yankı sızmadı (önceki kuralların ikisi de çalıştı). Ama Self'in üç "Bu benim sesim." cümlesinden ikincisi ve üçüncüsünün ilk kelimesi ("Bu") kayboldu: videoda aynı anda "bu" geçiyordu ve ±1,5 sn pencerede tek kelime olarak eşleşti. Kelime eşleşmesi, ortak kelimelerde (bu, ve, bir) rastlantısal yanlış pozitif verir. Bu yüzden bir `mic` segmentinde en az 2 ardışık kelime eşleşmedikçe yankı sayılmaz (`docs/tuning.md` → Yankı dizisi). Bedeli: tek kelimelik gerçek yankı artık Self'te kalabilir; kayıp yerine fazlalık tercih edildi (kullanıcı düzeltirken silebilir, kaybolan söz geri gelmez). Henüz tek kayıtla doğrulandı.

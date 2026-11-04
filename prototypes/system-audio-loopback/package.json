@@ -1,0 +1,6 @@
+{
+  "name": "system-audio-loopback-prototype",
+  "version": "0.0.0",
+  "private": true,
+  "main": "main.js"
+}

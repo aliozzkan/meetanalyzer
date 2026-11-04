@@ -1,11 +1,20 @@
 import type { Language, MeetingState } from '../../shared/meeting'
+import type { AudioChannel } from '../../shared/audio'
 import type {
+  Side,
   Transcript,
   TranscriptErrorCode,
   TranscriptRecording,
   TranscriptSegment
 } from '../../shared/transcript'
+import {
+  ECHO_MIN_RUN,
+  ECHO_SEGMENT_MIN_ECHOES,
+  ECHO_SEGMENT_MIN_RATIO,
+  ECHO_WINDOW_MS
+} from '../config'
 import type { Db } from '../db/database'
+import { dropIsolatedEchoes, expandEchoesBySegment, findEchoWordIds } from './echo'
 
 export class TranscriptError extends Error {
   constructor(
@@ -40,10 +49,22 @@ interface WordContext {
 interface TranscriptRow {
   recording_id: string
   segment_id: string
+  channel: AudioChannel
+  segment_start_ms: number
   word_id: string
   text: string
+  word_start_ms: number
   is_suspect: number
   corrected: string | null
+}
+
+const SIDE: Record<AudioChannel, Side> = { mic: 'self', system: 'others' }
+
+interface SegmentDraft {
+  id: string
+  channel: AudioChannel
+  startMs: number
+  words: (TranscriptSegment['words'][number] & { startMs: number })[]
 }
 
 export function createTranscriptService({
@@ -64,8 +85,8 @@ export function createTranscriptService({
     // Tek sorgu: Recording → segment → kelime sırasıyla; 1 saatlik toplantı ~10k satırdır.
     const rows = db
       .prepare(
-        `SELECT r.id AS recording_id, s.id AS segment_id, w.id AS word_id, w.text, w.is_suspect,
-                c.corrected
+        `SELECT r.id AS recording_id, s.id AS segment_id, s.channel, s.start_ms AS segment_start_ms,
+                w.id AS word_id, w.text, w.start_ms AS word_start_ms, w.is_suspect, c.corrected
          FROM recordings r
          JOIN segments s ON s.recording_id = r.id
          JOIN words w ON w.segment_id = s.id
@@ -75,27 +96,71 @@ export function createTranscriptService({
       )
       .all(meetingId) as TranscriptRow[]
 
-    const recordings: TranscriptRecording[] = []
-    let recording: TranscriptRecording | undefined
-    let segment: TranscriptSegment | undefined
+    const drafts = new Map<string, Map<string, SegmentDraft>>() // Recording → segment (ekleme sırası korunur)
     for (const row of rows) {
-      if (recording?.id !== row.recording_id) {
-        recording = { id: row.recording_id, segments: [] }
-        recordings.push(recording)
-        segment = undefined
+      const segments = drafts.get(row.recording_id) ?? new Map<string, SegmentDraft>()
+      drafts.set(row.recording_id, segments)
+      const segment = segments.get(row.segment_id) ?? {
+        id: row.segment_id,
+        channel: row.channel,
+        startMs: row.segment_start_ms,
+        words: []
       }
-      if (segment?.id !== row.segment_id) {
-        segment = { id: row.segment_id, words: [] }
-        recording!.segments.push(segment)
-      }
+      segments.set(row.segment_id, segment)
       segment.words.push({
         id: row.word_id,
         text: row.text,
         isSuspect: row.is_suspect === 1,
-        corrected: row.corrected
+        corrected: row.corrected,
+        startMs: row.word_start_ms
       })
     }
+
+    const recordings: TranscriptRecording[] = [...drafts].map(([id, segments]) => ({
+      id,
+      segments: mergeChannels([...segments.values()])
+    }))
     return { meetingId, recordings }
+  }
+
+  // İki kanalın segmentlerini başlangıç zamanına göre tek akışa birleştirir; yankı sayılan `mic` kelimeleri
+  // (ADR-0007) Transcript'e girmez, tüm kelimeleri atılan segment görünmez.
+  function mergeChannels(segments: SegmentDraft[]): TranscriptSegment[] {
+    const wordsOf = (channel: AudioChannel): { id: string; text: string; startMs: number }[] =>
+      segments.filter((segment) => segment.channel === channel).flatMap((segment) => segment.words)
+    const micSegments = segments
+      .filter((segment) => segment.channel === 'mic')
+      .map((segment) => ({ wordIds: segment.words.map((word) => word.id) }))
+    const echoes = expandEchoesBySegment(
+      micSegments,
+      dropIsolatedEchoes(
+        micSegments,
+        findEchoWordIds(wordsOf('mic'), wordsOf('system'), ECHO_WINDOW_MS),
+        ECHO_MIN_RUN
+      ),
+      { minEchoes: ECHO_SEGMENT_MIN_ECHOES, minRatio: ECHO_SEGMENT_MIN_RATIO }
+    )
+
+    return segments
+      .map((segment) => ({
+        ...segment,
+        words: segment.words.filter((word) => !echoes.has(word.id))
+      }))
+      .filter((segment) => segment.words.length > 0)
+      .sort(
+        (a, b) =>
+          a.startMs - b.startMs || (a.channel === b.channel ? 0 : a.channel === 'mic' ? -1 : 1)
+      )
+      .map((segment) => ({
+        id: segment.id,
+        side: SIDE[segment.channel],
+        words: segment.words.map(({ id, text, isSuspect, corrected }) => ({
+          id,
+          text,
+          isSuspect,
+          corrected
+        }))
+      }))
   }
 
   // Correction yalnızca Transcribed Meeting'in Suspect Word'üne yazılabilir (UI'a güvenilmez).

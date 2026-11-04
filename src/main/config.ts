@@ -51,3 +51,17 @@ export const MODEL_DOWNLOAD_MIN_FREE_BYTES = 1024 ** 3
 
 // docs/tuning.md → Suspect Word dinleme penceresi (kelimenin öncesi ve sonrası)
 export const SUSPECT_WORD_PLAYBACK_PADDING_MS = 2_000
+
+// docs/tuning.md → Yankı penceresi (ADR-0007): bir `mic` kelimesi, bu süre içinde aynı yazılışla `system` kanalında da
+// geçiyorsa yankı sayılır ve Transcript'e girmez.
+export const ECHO_WINDOW_MS = 1_500
+
+// docs/tuning.md → Yankı dizisi: bir `mic` segmentinde en az bu kadar ardışık kelime eşleşmedikçe tek başına eşleşme
+// yankı sayılmaz ("bu", "ve" gibi ortak kelimeler Self'in gerçek sözünü silmesin).
+export const ECHO_MIN_RUN = 2
+
+// docs/tuning.md → Yankı segmenti: bir `mic` segmentinde en az bu kadar kelime yankı sayılmış ve oranı bu eşiği
+// geçiyorsa segmentin kalan kelimeleri de yankıdır (yankılı ses başka yazılışla tanınan kelimeleri, kaydın başında/sonunda
+// sistem kanalında karşılığı olmayan kelimeleri bırakır).
+export const ECHO_SEGMENT_MIN_ECHOES = 3
+export const ECHO_SEGMENT_MIN_RATIO = 0.6

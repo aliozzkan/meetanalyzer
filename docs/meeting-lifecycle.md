@@ -29,13 +29,14 @@ Recording ──► Closed ──► Transcribing ──► Transcribed ──�
 ## Geçiş kuralları
 
 - Aynı anda en fazla bir Meeting Recording durumunda olabilir.
+- **Recording sırasında kopma:** Recording'in kaynaklarından biri (mikrofon ya da sistem sesi) kayıt sürerken kopar ve Recording kendiliğinden biterse o ana kadarki kısım korunur; Meeting Recording durumunda kalır ve kullanıcı yeni bir Recording başlatabilir.
 - **Recording → Closed:** Kullanıcı toplantı bittiğinde Meeting'i kapatır. Dönüş yoktur. Hiç Recording'i olmayan Meeting kapatılamaz; silinir.
 - **Closed → Transcribing:** Kullanıcı Transcription'ı elle başlatır; Meeting Transcription Queue'ya girer. Transcription toplantı sırasında kendiliğinden başlamaz, ama kullanıcı başlattıysa yeni bir Meeting'in Recording'i sürerken de arka planda devam eder.
 - **Transcribing → Transcribed:** Meeting'in tüm Recording'leri transcribe edildi.
 - **Transcribing → Closed:** Transcription hata verirse ya da uygulama Transcription sürerken kapanırsa. Hata durumunda hata mesajı Meeting'in `last_error` alanına yazılır ve Closed'da gösterilir; yeniden Transcribing'e girerken silinir. Tamamlanmış Recording'lerin transcript'leri korunur; yeniden başlatıldığında yalnızca kalanlar işlenir.
 - **Transcribed → Approved:** Kullanıcı Transcript'i onaylar. Her Suspect Word'ün tek tek işaretlenmesi gerekmez; düzeltilmemiş Suspect Word varsa sayısıyla birlikte onay sorulur. Onay geri alınamaz; Approved Transcript dondurulur ve Recording sesleri silinir.
 - **Silme:** Approved'dan önceki her durumda Meeting silinebilir; sesleri ve verisi tamamen kaldırılır. Approved ve sonrasında silme şimdilik yoktur.
-- **Çökme:** Recording sırasında uygulama çökerse açılışta yarım kalan Recording son yazılan parçada bitmiş sayılır (WAV header'ı onarılır, süre ve bitiş zamanı yazılır; en fazla son ~5 sn kaybolur); hiç ses içermeyen Recording silinir. Meeting Recording durumunda kalır.
+- **Çökme:** Recording sırasında uygulama çökerse açılışta yarım kalan Recording son yazılan parçada bitmiş sayılır: her kanalın (`mic`, `system`) WAV header'ı ayrı onarılır, süre ve bitiş zamanı kısa kanala göre yazılır (en fazla son ~5 sn kaybolur). Kanallardan biri hiç ses içermiyorsa Recording bütün olarak silinir. Meeting Recording durumunda kalır.
 - **Approved → Awaiting Analysis:** Analysis Request backend'e başarıyla ulaşırsa.
 - **Approved → Send Failed:** Analysis Request backend'e ulaşmazsa.
 - **Awaiting Analysis → Completed:** Backend analizin tamamlandığını bildirir, sonuç çekilir.

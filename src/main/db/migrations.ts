@@ -91,5 +91,36 @@ export const migrations: string[] = [
   // Meeting'in isteğe bağlı, yalnızca lokal adı (GLOSSARY → Title). Kırpma ve uzunluk servis tarafında.
   `
   ALTER TABLE meetings ADD COLUMN title TEXT;
+  `,
+  // Sistem sesi (system-audio dilimi): bir Recording'in iki kanalı olur ('mic' = Self, 'system' = Others) ve
+  // Transcription kanal başına izlenir. SQLite CHECK kısıtını değiştiremediği için tablo yeniden kurulur;
+  // mevcut Recording'lerin transcribed_at değeri 'mic' kanalına taşınır. `recordings.transcribed_at`
+  // "tüm kanallar bitti" anlamında kalır.
+  `
+  CREATE TABLE recording_channels_v2 (
+    recording_id TEXT NOT NULL REFERENCES recordings (id) ON DELETE CASCADE,
+    kind TEXT NOT NULL CHECK (kind IN ('mic', 'system')),
+    file_path TEXT,
+    duration_ms INTEGER,
+    transcribed_at INTEGER,
+    PRIMARY KEY (recording_id, kind)
+  );
+
+  INSERT INTO recording_channels_v2 (recording_id, kind, file_path, duration_ms, transcribed_at)
+    SELECT c.recording_id, c.kind, c.file_path, c.duration_ms, r.transcribed_at
+    FROM recording_channels c JOIN recordings r ON r.id = c.recording_id;
+
+  DROP TABLE recording_channels;
+  ALTER TABLE recording_channels_v2 RENAME TO recording_channels;
+  `,
+  // Segment hangi kanaldan (mikrofon = Self, sistem sesi = Others) geldiğini taşır; mevcut segmentler 'mic'.
+  // Kanal başına Transcription segment numaralarını Recording içinde sürdürür (UNIQUE (recording_id, seq)).
+  `
+  ALTER TABLE segments ADD COLUMN channel TEXT NOT NULL DEFAULT 'mic' CHECK (channel IN ('mic', 'system'));
+  `,
+  // Approved Transcript Side bloklarını saklar: JSON dizisi [{ side, text }]. `text` düz metin görünümü olarak kalır.
+  // Bu migration'dan önce onaylananlarda blocks NULL'dır ve tek bir Self bloğu sayılır.
+  `
+  ALTER TABLE approved_transcripts ADD COLUMN blocks TEXT;
   `
 ]

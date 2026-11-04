@@ -1,4 +1,4 @@
-Status: ready-for-human
+Status: resolved
 Blocked by: 02, 08
 
 # Transcription Modeli bölümü ve header göstergesi

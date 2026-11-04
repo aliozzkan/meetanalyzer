@@ -3,6 +3,7 @@ import type { SettingsErrorCode } from '../../shared/settings'
 import type { Db } from '../db/database'
 
 const DEFAULT_LANGUAGE_KEY = 'default_language'
+const SYSTEM_AUDIO_CONSENT_KEY = 'system_audio_consent'
 
 export class SettingsError extends Error {
   constructor(
@@ -21,6 +22,9 @@ export interface SettingsServiceOptions {
 export interface SettingsService {
   getDefaultLanguage: () => Language
   setDefaultLanguage: (language: Language) => void
+  /** Sistem sesi kaydı bilgilendirmesi kabul edildi mi? Kabul edilmeden Recording başlamaz. */
+  hasSystemAudioConsent: () => boolean
+  acceptSystemAudioConsent: () => void
 }
 
 export function createSettingsService({ db }: SettingsServiceOptions): SettingsService {
@@ -40,6 +44,10 @@ export function createSettingsService({ db }: SettingsServiceOptions): SettingsS
         throw new SettingsError('invalid-input', `Desteklenmeyen dil: ${String(language)}`)
       }
       upsert.run(DEFAULT_LANGUAGE_KEY, language)
+    },
+    hasSystemAudioConsent: () => select.get(SYSTEM_AUDIO_CONSENT_KEY)?.value === 'accepted',
+    acceptSystemAudioConsent: () => {
+      upsert.run(SYSTEM_AUDIO_CONSENT_KEY, 'accepted')
     }
   }
 }

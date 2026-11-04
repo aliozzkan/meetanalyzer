@@ -9,3 +9,6 @@ out
 resources/bin/
 resources/models/
 .cache/
+
+# prototip çıktıları
+prototypes/**/dist

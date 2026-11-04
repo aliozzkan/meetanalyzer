@@ -1,5 +1,11 @@
 import { Fragment, memo, useMemo } from 'react'
-import { countUncorrected, type TranscriptSegment } from '@shared/transcript'
+import {
+  SIDE_LABEL,
+  countUncorrected,
+  groupIntoBlocks,
+  type TranscriptRecording,
+  type TranscriptSegment
+} from '@shared/transcript'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { SuspectWord } from './suspect-word'
 import type { TranscriptApi } from './use-transcript'
@@ -34,6 +40,40 @@ const Segment = memo(function Segment({
   )
 })
 
+interface RecordingSectionProps {
+  recording: TranscriptRecording
+  onCorrect: TranscriptApi['correct']
+  onRevert: TranscriptApi['revert']
+}
+
+// Bir Recording'in segmentleri "Sen" / "Diğerleri" etiketli bloklar halinde gösterilir (ardışık aynı Side'lı
+// segmentler tek blok). Bir Correction yalnızca kendi Recording'ini yeniden hesaplatır.
+const RecordingSection = memo(function RecordingSection({
+  recording,
+  onCorrect,
+  onRevert
+}: RecordingSectionProps): React.JSX.Element {
+  const blocks = useMemo(() => groupIntoBlocks(recording.segments), [recording.segments])
+  return (
+    <>
+      {blocks.map((block, index) => (
+        <section
+          key={`${block.segments[0].id}-${index}`}
+          aria-label={SIDE_LABEL[block.side]}
+          className="flex flex-col gap-1"
+        >
+          <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            {SIDE_LABEL[block.side]}
+          </span>
+          {block.segments.map((segment) => (
+            <Segment key={segment.id} segment={segment} onCorrect={onCorrect} onRevert={onRevert} />
+          ))}
+        </section>
+      ))}
+    </>
+  )
+})
+
 // Transcribed Meeting'in Transcript'i: salt okunur; yalnızca Suspect Word'ler tıklanabilir.
 export function TranscriptView({ api }: { api: TranscriptApi }): React.JSX.Element {
   const { transcript } = api
@@ -59,14 +99,11 @@ export function TranscriptView({ api }: { api: TranscriptApi }): React.JSX.Eleme
                 {index > 0 && (
                   <hr aria-label="Kayıt sınırı" className="my-2 border-t border-border/40" />
                 )}
-                {recording.segments.map((segment) => (
-                  <Segment
-                    key={segment.id}
-                    segment={segment}
-                    onCorrect={api.correct}
-                    onRevert={api.revert}
-                  />
-                ))}
+                <RecordingSection
+                  recording={recording}
+                  onCorrect={api.correct}
+                  onRevert={api.revert}
+                />
               </Fragment>
             ))}
           </>

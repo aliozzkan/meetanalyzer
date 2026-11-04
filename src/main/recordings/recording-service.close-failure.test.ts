@@ -45,6 +45,7 @@ async function activeRecording(): Promise<{
     db,
     recordingsDir,
     requestMicrophoneAccess: async () => 'granted',
+    hasSystemAudioConsent: () => true,
     power
   })
   const recording = await recordings.start('m1')

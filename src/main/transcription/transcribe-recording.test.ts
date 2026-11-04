@@ -168,14 +168,14 @@ describe('transcribeRecording', () => {
 
   it('yazma sırasında bir hata olursa tek işlem geri alınır: yarım Transcript kalmaz', async () => {
     const { db, options } = setup(async () => fixtureRun('tr-gap'))
-    // 2. segment (seq 2) zaten varmış gibi çakışma yarat: 1. segmentin eklenmesinden SONRA patlar
-    db.prepare(
-      "INSERT INTO segments (id, recording_id, seq, start_ms, end_ms) VALUES ('onceden', 'r1', 2, 0, 1)"
-    ).run()
+    // 2. segmentin eklenmesi patlasın: 1. segment eklendikten SONRA hata verir
+    db.exec(
+      "CREATE TRIGGER fail_second BEFORE INSERT ON segments WHEN NEW.seq = 2 BEGIN SELECT RAISE(ABORT, 'boom'); END"
+    )
 
     await expect(transcribeRecording(options)).rejects.toBeDefined()
 
-    expect(count(db, 'segments')).toBe(1) // yalnızca önceden var olan
+    expect(count(db, 'segments')).toBe(0)
     expect(count(db, 'words')).toBe(0)
     expect(
       db.prepare("SELECT transcribed_at FROM recordings WHERE id = 'r1'").pluck().get()

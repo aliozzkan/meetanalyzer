@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  composeApprovedBlocks,
   composeApprovedText,
   countUncorrected,
+  groupIntoBlocks,
   wordDisplay,
+  type Side,
   type Transcript,
+  type TranscriptSegment,
   type TranscriptWord
 } from './transcript'
 
@@ -42,6 +46,7 @@ describe('countUncorrected', () => {
           segments: [
             {
               id: 's1',
+              side: 'self',
               words: [
                 word({ id: '1' }),
                 word({ id: '2', corrected: '' }),
@@ -51,7 +56,7 @@ describe('countUncorrected', () => {
             }
           ]
         },
-        { id: 'r2', segments: [{ id: 's2', words: [word({ id: '5' })] }] }
+        { id: 'r2', segments: [{ id: 's2', side: 'self', words: [word({ id: '5' })] }] }
       ]
     }
 
@@ -62,10 +67,11 @@ describe('countUncorrected', () => {
 describe('composeApprovedText', () => {
   const recording = (
     id: string,
-    words: Partial<TranscriptWord>[]
+    words: Partial<TranscriptWord>[],
+    side: Side = 'self'
   ): Transcript['recordings'][0] => ({
     id,
-    segments: [{ id: `${id}-s`, words: words.map((w, i) => word({ id: `${id}${i}`, ...w })) }]
+    segments: [{ id: `${id}-s`, side, words: words.map((w, i) => word({ id: `${id}${i}`, ...w })) }]
   })
   const compose = (...recordings: Transcript['recordings']): string =>
     composeApprovedText({ meetingId: 'm', recordings })
@@ -79,25 +85,19 @@ describe('composeApprovedText', () => {
           { text: 'nasılsın?', isSuspect: false }
         ])
       )
-    ).toBe('Merhaba, dünya nasılsın?')
+    ).toBe('Sen: Merhaba, dünya nasılsın?')
   })
 
-  it('çok kelimeli Correction olduğu gibi girer, iç boşluklar normalize edilir', () => {
-    expect(
-      compose(recording('r', [{ text: 'a', isSuspect: false }, { corrected: 'big   new\nworld' }]))
-    ).toBe('a big new world')
-  })
-
-  it('boş Correction kelimeyi düşürür ve fazladan boşluk bırakmaz', () => {
+  it('boş Correction kelimeyi düşürür; boşluklar tek boşluğa iner', () => {
     expect(
       compose(
         recording('r', [
-          { text: 'bir', isSuspect: false },
-          { corrected: '' },
+          { text: ' bir ', isSuspect: false },
+          { text: 'wrold', corrected: '' },
           { text: 'iki', isSuspect: false }
         ])
       )
-    ).toBe('bir iki')
+    ).toBe('Sen: bir iki')
   })
 
   it('noktalama kelimeye bitişik kalır; Correction noktalamayı da değiştirebilir', () => {
@@ -108,33 +108,79 @@ describe('composeApprovedText', () => {
           { text: 'tamam.', corrected: 'tamam!' }
         ])
       )
-    ).toBe('gelecek, tamam!')
+    ).toBe('Sen: gelecek, tamam!')
   })
 
-  it("Recording'ler arasına paragraf ayrımı koyar; tamamen silinen Recording paragraf bırakmaz", () => {
+  it("Recording'ler ayrı bloktur (Recording sınırında birleşmez); tamamen silinen blok bırakılmaz", () => {
     expect(
       compose(
         recording('r1', [{ text: 'birinci', isSuspect: false }]),
         recording('r2', [{ corrected: '' }]),
         recording('r3', [{ text: 'üçüncü', isSuspect: false }])
       )
-    ).toBe('birinci\n\nüçüncü')
+    ).toBe('Sen: birinci\n\nSen: üçüncü')
   })
 
-  it('segmentler aynı paragrafta birleşir', () => {
+  it('aynı Recording içinde ardışık aynı Side’lı segmentler tek blokta birleşir', () => {
     const transcript: Transcript = {
       meetingId: 'm',
       recordings: [
         {
           id: 'r',
           segments: [
-            { id: 's1', words: [word({ text: 'bir', isSuspect: false })] },
-            { id: 's2', words: [word({ text: 'iki', isSuspect: false })] }
+            { id: 's1', side: 'self', words: [word({ text: 'bir', isSuspect: false })] },
+            { id: 's2', side: 'self', words: [word({ text: 'iki', isSuspect: false })] }
           ]
         }
       ]
     }
 
-    expect(composeApprovedText(transcript)).toBe('bir iki')
+    expect(composeApprovedText(transcript)).toBe('Sen: bir iki')
+  })
+
+  it('Side değişince yeni blok başlar; düz metin “Sen: …” / “Diğerleri: …” bloklarıdır', () => {
+    const transcript: Transcript = {
+      meetingId: 'm',
+      recordings: [
+        {
+          id: 'r',
+          segments: [
+            { id: 's1', side: 'others', words: [word({ text: 'Merhaba', isSuspect: false })] },
+            { id: 's2', side: 'self', words: [word({ text: 'Selam', isSuspect: false })] },
+            { id: 's3', side: 'self', words: [word({ text: 'nasılsınız', isSuspect: false })] },
+            { id: 's4', side: 'others', words: [word({ text: 'İyiyiz', isSuspect: false })] }
+          ]
+        }
+      ]
+    }
+
+    expect(composeApprovedBlocks(transcript)).toEqual([
+      { side: 'others', text: 'Merhaba' },
+      { side: 'self', text: 'Selam nasılsınız' },
+      { side: 'others', text: 'İyiyiz' }
+    ])
+    expect(composeApprovedText(transcript)).toBe(
+      'Diğerleri: Merhaba\n\nSen: Selam nasılsınız\n\nDiğerleri: İyiyiz'
+    )
+  })
+})
+
+describe('groupIntoBlocks', () => {
+  const segment = (id: string, side: Side): TranscriptSegment => ({ id, side, words: [] })
+
+  it('ardışık aynı Side’lı segmentleri bloklar; boş listeden boş liste çıkar', () => {
+    expect(groupIntoBlocks([])).toEqual([])
+    expect(
+      groupIntoBlocks([
+        segment('a', 'self'),
+        segment('b', 'self'),
+        segment('c', 'others'),
+        segment('d', 'self')
+      ]).map((block) => [block.side, block.segments.map((s) => s.id)])
+    ).toEqual([
+      ['self', ['a', 'b']],
+      ['others', ['c']],
+      ['self', ['d']]
+    ])
   })
 })

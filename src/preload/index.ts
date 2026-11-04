@@ -2,10 +2,16 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { Language, MeetingResult, MeetingSummary } from '../shared/meeting'
 import type { ModelResult, ModelState } from '../shared/model'
-import type { Transcript, TranscriptResult, WordAudio } from '../shared/transcript'
+import type {
+  ApprovedTranscript,
+  Transcript,
+  TranscriptResult,
+  WordAudio
+} from '../shared/transcript'
 import type { TranscriptionStatus } from '../shared/transcription'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
 import type { AppCommand, AppInfo } from '../shared/app'
+import type { AudioChannel } from '../shared/audio'
 import type { SettingsResult, Theme } from '../shared/settings'
 
 // Custom APIs for renderer
@@ -23,14 +29,20 @@ const api = {
   recordings: {
     start: (meetingId: string): Promise<RecordingResult<RecordingSummary>> =>
       ipcRenderer.invoke('recordings:start', meetingId),
-    append: (recordingId: string, pcm: Uint8Array): Promise<RecordingResult<void>> =>
-      ipcRenderer.invoke('recordings:append', recordingId, pcm),
+    append: (
+      recordingId: string,
+      pcm: Uint8Array,
+      channel: AudioChannel
+    ): Promise<RecordingResult<void>> =>
+      ipcRenderer.invoke('recordings:append', recordingId, pcm, channel),
     stop: (recordingId: string): Promise<RecordingResult<RecordingSummary>> =>
       ipcRenderer.invoke('recordings:stop', recordingId),
     discard: (recordingId: string): Promise<RecordingResult<void>> =>
       ipcRenderer.invoke('recordings:discard', recordingId),
     openMicrophoneSettings: (): Promise<void> =>
-      ipcRenderer.invoke('recordings:open-microphone-settings')
+      ipcRenderer.invoke('recordings:open-microphone-settings'),
+    openSystemAudioSettings: (): Promise<void> =>
+      ipcRenderer.invoke('recordings:open-system-audio-settings')
   },
   transcription: {
     enqueue: (meetingId: string): Promise<MeetingResult<MeetingSummary>> =>
@@ -54,6 +66,8 @@ const api = {
       ipcRenderer.invoke('transcript:approve', meetingId),
     approvedText: (meetingId: string): Promise<TranscriptResult<string>> =>
       ipcRenderer.invoke('transcript:approved-text', meetingId),
+    approved: (meetingId: string): Promise<TranscriptResult<ApprovedTranscript>> =>
+      ipcRenderer.invoke('transcript:approved', meetingId),
     revert: (wordId: string): Promise<TranscriptResult<void>> =>
       ipcRenderer.invoke('transcript:revert', wordId)
   },
@@ -78,6 +92,10 @@ const api = {
       ipcRenderer.invoke('settings:get-default-language'),
     setDefaultLanguage: (language: Language): Promise<SettingsResult<void>> =>
       ipcRenderer.invoke('settings:set-default-language', language),
+    getSystemAudioConsent: (): Promise<SettingsResult<boolean>> =>
+      ipcRenderer.invoke('settings:get-system-audio-consent'),
+    acceptSystemAudioConsent: (): Promise<SettingsResult<void>> =>
+      ipcRenderer.invoke('settings:accept-system-audio-consent'),
     setTheme: (theme: Theme): Promise<SettingsResult<void>> =>
       ipcRenderer.invoke('settings:set-theme', theme)
   },

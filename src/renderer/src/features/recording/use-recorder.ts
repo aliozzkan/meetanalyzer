@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
-import { startMicCapture } from './mic-capture'
+import { createMacLoopbackSource } from './mac-loopback-source'
+import { createMicSource } from './mic-source'
 import {
   createRecorderController,
   type RecorderController,
@@ -20,7 +21,7 @@ export function useRecorder(onRecordingsChanged: () => void | Promise<void>): Re
   const [controller] = useState<RecorderController>(() =>
     createRecorderController({
       recordings: window.api.recordings,
-      startMicCapture,
+      createSources: () => ({ mic: createMicSource(), system: createMacLoopbackSource() }),
       notifyError: (message) => toast.error(message),
       onRecordingsChanged: () => void onRecordingsChanged()
     })

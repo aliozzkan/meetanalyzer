@@ -28,6 +28,7 @@ function setup(options: { microphone?: 'granted' | 'denied'; power?: PowerGuard 
     db,
     recordingsDir,
     requestMicrophoneAccess: async () => options.microphone ?? 'granted',
+    hasSystemAudioConsent: () => true,
     power: options.power ?? noPower,
     now: () => time
   })
@@ -93,7 +94,10 @@ describe('Recording servisi', () => {
           'SELECT kind, file_path, duration_ms FROM recording_channels WHERE recording_id = ?'
         )
         .all(recording.id)
-    ).toEqual([{ kind: 'mic', file_path: join('m1', recording.id, 'mic.wav'), duration_ms: 2_000 }])
+    ).toEqual([
+      { kind: 'mic', file_path: join('m1', recording.id, 'mic.wav'), duration_ms: 2_000 },
+      { kind: 'system', file_path: join('m1', recording.id, 'system.wav'), duration_ms: 0 }
+    ])
     expect(existsSync(file)).toBe(true)
   })
 
@@ -149,7 +153,9 @@ describe('Recording servisi', () => {
     expect(files.map((wav) => wav.subarray(44)[0])).toEqual([1, 2, 3])
     expect(files.every((wav) => wav.length === 44 + 100)).toBe(true)
     expect(db.prepare('SELECT seq FROM recordings ORDER BY seq').pluck().all()).toEqual([1, 2, 3])
-    expect(db.prepare('SELECT DISTINCT file_path FROM recording_channels').all()).toHaveLength(3)
+    expect(
+      db.prepare("SELECT DISTINCT file_path FROM recording_channels WHERE kind = 'mic'").all()
+    ).toHaveLength(3)
   })
 
   it('bilinmeyen ya da durdurulmuş Recording için ses eklenemez ve durdurulamaz', async () => {

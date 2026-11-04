@@ -155,12 +155,15 @@ export function createTranscriptionQueue({
       const { language } = meetings.get(meetingId)
       const recordings = db
         .prepare(
-          `SELECT r.id, COALESCE(c.duration_ms, 0) AS duration_ms
-           FROM recordings r LEFT JOIN recording_channels c ON c.recording_id = r.id AND c.kind = 'mic'
-           WHERE r.meeting_id = ? AND r.transcribed_at IS NULL ORDER BY r.seq`
+          `SELECT r.id, COALESCE(SUM(c.duration_ms), 0) AS duration_ms
+           FROM recordings r
+           LEFT JOIN recording_channels c ON c.recording_id = r.id AND c.transcribed_at IS NULL
+           WHERE r.meeting_id = ? AND r.transcribed_at IS NULL
+           GROUP BY r.id ORDER BY r.seq`
         )
         .all(meetingId) as { id: string; duration_ms: number }[]
-      // Meeting geneli ilerleme, Recording süreleriyle ağırlıklanır (süresi bilinmeyen 1 sayılır).
+      // Meeting geneli ilerleme, Recording'in işlenecek kanallarının toplam süresiyle ağırlıklanır (her kanal ayrı bir
+      // whisper çağrısıdır; süresi bilinmeyen 1 sayılır).
       const weights = recordings.map((recording) => Math.max(recording.duration_ms, 1))
       const total = weights.reduce((sum, weight) => sum + weight, 0)
 

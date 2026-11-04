@@ -1,52 +1,23 @@
 import { AUDIO_FORMAT, PCM_CHUNK_MS } from '@shared/audio'
 import { floatToPcm16, peakLevel } from '@shared/pcm'
 import workletUrl from './pcm-capture.worklet.ts?worker&url'
+import type { AudioSourceHandlers } from './audio-source'
 
-export interface MicCaptureHandlers {
-  /** PCM_CHUNK_MS'lik 16 kHz mono 16-bit little-endian PCM parçası. */
-  onChunk: (pcm: Uint8Array) => void
-  /** Her ses bloğu için tepe seviyesi (0..1) ve bloğun süresi. */
-  onLevel: (peak: number, durationMs: number) => void
-}
-
-export interface MicCapture {
-  /** Yakalamayı durdurur; kalan sesi son bir parça olarak gönderdikten sonra çözülür. */
+export interface PcmPipeline {
+  /** Akışı kapatır; kalan sesi son bir parça olarak gönderdikten sonra çözülür. */
   stop: () => Promise<void>
 }
 
 const CHUNK_SAMPLES = (AUDIO_FORMAT.sampleRate * PCM_CHUNK_MS) / 1000
 const FLUSH_TIMEOUT_MS = 1_000
-// Mikrofon açılışı (izin, cihaz) bu süre içinde tamamlanmazsa vazgeçilir; arayüz sonsuza dek beklemez.
-const OPEN_TIMEOUT_MS = 15_000
 
-async function openMicrophone(): Promise<MediaStream> {
-  const opening = navigator.mediaDevices.getUserMedia({
-    audio: {
-      channelCount: 1,
-      echoCancellation: false,
-      noiseSuppression: false,
-      autoGainControl: false
-    }
-  })
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => reject(new Error('mikrofon zamanında açılamadı')), OPEN_TIMEOUT_MS)
-  })
-  try {
-    return await Promise.race([opening, timeout])
-  } catch (error) {
-    // Zaman aşımından sonra gelen akış açık kalmasın.
-    void opening.then((late) => late.getTracks().forEach((track) => track.stop())).catch(() => {})
-    throw error
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
-// Sistemin varsayılan mikrofonundan 16 kHz mono PCM üretir (ADR-0003). Tarayıcı ses işleme
-// (yankı bastırma, gürültü bastırma, otomatik kazanç) kapalıdır: transcription kaynağa en yakın sesi ister.
-export async function startMicCapture(handlers: MicCaptureHandlers): Promise<MicCapture> {
-  const stream = await openMicrophone()
+// Bir MediaStream'i 16 kHz mono PCM parçalarına çevirir. Örnek hızı dönüşümü (ör. 48 kHz) ve stereo → mono
+// indirgemesi AudioContext'in kendisinde yapılır: bağlam 16 kHz açılır, worklet girişi tek kanala indirger.
+// Akışın sahipliği devralınır: hata olursa ya da durdurulunca track'ler kapatılır.
+export async function startPcmPipeline(
+  stream: MediaStream,
+  handlers: Pick<AudioSourceHandlers, 'onChunk' | 'onLevel'>
+): Promise<PcmPipeline> {
   let context: AudioContext | undefined
   let node: AudioWorkletNode
 

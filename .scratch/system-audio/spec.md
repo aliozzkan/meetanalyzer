@@ -18,7 +18,7 @@ Terimler [GLOSSARY.md](../../GLOSSARY.md), durumlar [docs/meeting-lifecycle.md](
 
 - **Platform:** yalnızca macOS 14.2+, Apple Silicon. Windows [ayrı dilimde](../windows-support/spec.md) (issue 07 ve 08); ses kaynakları bunun için adapter arkasında.
 - **Electron 45'e geçiş** bu dilimin içinde yapılır.
-- **Ne kaydedilir:** varsayılan çıkış cihazındaki tüm sistem sesi (toplantı uygulaması, bildirimler, müzik). Yalnızca toplantı uygulamasını seçmek kapsam dışı. Uygulamanın kendi sesi (Suspect Word dinletme) kayda girmez.
+- **Ne kaydedilir:** bilgisayarın tüm sistem sesi (uygulama hangi çıkış cihazına çalarsa çalsın; issue 01 ölçümü) (toplantı uygulaması, bildirimler, müzik). Yalnızca toplantı uygulamasını seçmek kapsam dışı. Uygulamanın kendi sesi (Suspect Word dinletme) kayda girmez.
 
 ## Kapsam dışı
 
@@ -42,7 +42,7 @@ Terimler [GLOSSARY.md](../../GLOSSARY.md), durumlar [docs/meeting-lifecycle.md](
 - Her Recording iki kanal yazar: `mic` (Self) ve `system` (Others), aynı başlangıç anıyla, ayrı dosyalara.
 - İki seviye göstergesi: "Sen" ve "Toplantı". Sessiz mikrofon uyarısı yalnızca `mic` için; sistem sesinin sessizliği normaldir (herkes susuyor, toplantı başlamadı).
 - **Kayıt sürerken bir kanal koparsa** (AirPods'a geçiş, çıkış cihazı değişimi, izin geri alındı, mikrofon çıkarıldı): Recording kendiliğinden durur, o ana kadarki kısım korunur, kullanıcıya nedeni ("Sistem sesi kesildi" / "Mikrofon kesildi") ve tek tıkla yeni Recording başlatan düğme gösterilir.
-- **Recording bitince**, mikrofonda konuşma olduğu halde sistem kanalı baştan sona sessizse: "Toplantı sesi duyulmadı. Toplantı uygulamanın çıkışı Mac'in varsayılan çıkışıyla aynı mı?" uyarısı. (Sistem sesi yalnızca varsayılan çıkış cihazından yakalanır; toplantı uygulaması başka bir cihaza çalıyorsa kanal sessiz kalır ve akış kopmaz.)
+- **Recording bitince**, mikrofonda konuşma olduğu halde sistem kanalı baştan sona sessizse: "Toplantı sesi duyulmadı…" uyarısı (diğer katılımcılar konuşmuyor, toplantı sesi çalmıyor ya da sistem sesi izni sorunlu olabilir). Sistem sesi çıkış cihazından bağımsız yakalandığı için (issue 01 ölçümü) "varsayılan çıkış" uyarısı yoktur.
 
 ### 3. Transcription
 
@@ -90,11 +90,11 @@ Terimler [GLOSSARY.md](../../GLOSSARY.md), durumlar [docs/meeting-lifecycle.md](
 
 ## Doğrulanmamış varsayımlar (issue 01 ölçer)
 
-- `getDisplayMedia` video istemeden yalnızca ses verebiliyor mu, yoksa video track hemen durdurulmalı mı.
-- Hardened runtime altında tap için ek entitlement gerekiyor mu.
-- `restrictOwnAudio` Electron 45'te var mı, Suspect Word dinletmesini kayıttan dışlıyor mu.
-- Varsayılan çıkış cihazı değişince (AirPods) akış `ended` mı oluyor, sessizleşiyor mu.
-- Toplantı uygulaması varsayılan olmayan cihaza çalarken sistem kanalı gerçekten sessiz mi.
+- ~~`getDisplayMedia` video istemeden yalnızca ses verebiliyor mu, yoksa video track hemen durdurulmalı mı.~~ **Ölçüldü:** `video: false` ile yalnızca ses alınıyor, ekran kaydı izni gerekmiyor.
+- ~~Hardened runtime altında tap için ek entitlement gerekiyor mu.~~ **Ölçüldü:** gerekmiyor (mevcut entitlements ile çalıştı).
+- ~~`restrictOwnAudio` Electron 45'te var mı, Suspect Word dinletmesini kayıttan dışlıyor mu.~~ **Ölçüldü:** var ve uygulamanın kendi sesini tamamen dışlıyor (kısıt kapalıyken aynı ton kayda giriyor).
+- ~~Varsayılan çıkış cihazı değişince (AirPods) akış `ended` mı oluyor, sessizleşiyor mu.~~ **Ölçüldü (issue 01):** ikisi de olmuyor, loopback değişimi sessizce takip ediyor; çıkış cihazı değişimi Recording'i durdurmaz.
+- ~~Toplantı uygulaması varsayılan olmayan cihaza çalarken sistem kanalı gerçekten sessiz mi.~~ **Ölçüldü (issue 01): sessiz değil.** Varsayılan çıkış MacBook hoparlörüyken Teams sesi AirPods'a çalarken sistem kanalı sesi yakaladı (RMS 0,05–0,11); yani yakalama çıkış cihazından bağımsız.
 - Sequoia/Tahoe'nun aylık izin yenileme istemi bu izinde de çıkıyor mu.
 - Yankı tekilleştirmesi gerçek kulaklıksız bir toplantıda ne kadar yankı bırakıyor, ne kadar gerçek söz siliyor.
 

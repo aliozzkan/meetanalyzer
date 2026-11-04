@@ -22,3 +22,14 @@ Spec: [../spec.md](../spec.md) → "2. Recording", "Veri", "Çökme sonrası top
 - [ ] Zorla kapatma sonrası iki dosya da onarılır; kanallardan biri boşsa Recording silinir (test).
 - [ ] Onay ve Meeting silme iki dosyayı da kaldırır (test).
 - [ ] Migration mevcut tek kanallı Recording'leri bozmaz (test).
+
+## Uygulama notu
+
+Kod tamamlandı, testler henüz çalıştırılmadı ([test-checklist.md](../test-checklist.md)). Kabul kriterleri testten sonra işaretlenecek.
+
+- Migration 5 `recording_channels`'ı yeniden kurar (`kind IN ('mic','system')`, `transcribed_at`); eski `recordings.transcribed_at` "tüm kanallar bitti" anlamında kalır ve mevcut değer `mic` kanalına kopyalanır.
+- `recording-service`: `start` iki dosya (`mic.wav`, `system.wav`) ve iki kanal satırı yazar; `append(id, pcm, channel = 'mic')` kanalı doğrular; `stop` her iki header'ı ayrı dener ve kanal sürelerini yazar (özet süre = uzun kanal); `discard` klasörü komple siler.
+- Kayıt sırasında kopma main'de ayrı kod gerektirmedi: renderer controller (`onEnded` → `finish`) normal `stop`'u çağırır, kaydedilen kısım korunur; sebep `interrupted` ile arayüze iletilir (issue 05).
+- `recovery.ts`: Recording bazında gruplanır, her dosya ayrı onarılır, `ended_at` = başlangıç + en kısa kanal süresi; kanallardan biri boşsa/yoksa Recording bütün olarak silinir.
+- Onay (`purgeApprovedAudio`) ve Meeting silme zaten klasör bazlıdır; iki dosya için test eklendi.
+- `use-recorder` artık `mic` + `system` kaynaklarını bağlar (consent kapısı issue 05'te eklenene kadar `Kaydı başlat` her iki izni ister).
