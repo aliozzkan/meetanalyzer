@@ -34,10 +34,13 @@ navigator.mediaDevices.addEventListener('devicechange', async () => {
 $('start').onclick = async () => {
   if (stream) return log('zaten çalışıyor')
   await window.proto.setMode($('mute').checked ? 'loopbackWithMute' : 'loopback')
-  const audio = $('restrict').checked ? { restrictOwnAudio: true } : true
+  const audio = {}
+  if ($('restrict').checked) audio.restrictOwnAudio = true
+  if ($('raw').checked) Object.assign(audio, { echoCancellation: false, noiseSuppression: false, autoGainControl: false })
+  log('istenen audio kısıtları', Object.keys(audio).length ? audio : true)
   log('supportedConstraints.restrictOwnAudio =', navigator.mediaDevices.getSupportedConstraints().restrictOwnAudio)
   try {
-    stream = await navigator.mediaDevices.getDisplayMedia({ audio, video: $('video').checked })
+    stream = await navigator.mediaDevices.getDisplayMedia({ audio: Object.keys(audio).length ? audio : true, video: $('video').checked })
   } catch (error) {
     stream = undefined
     return log('getDisplayMedia HATA', error.name, error.message)
