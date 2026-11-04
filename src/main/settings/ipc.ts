@@ -1,6 +1,6 @@
 import { ipcMain, nativeTheme } from 'electron'
 import type { Language } from '../../shared/meeting'
-import { THEMES, type Theme } from '../../shared/settings'
+import { THEMES, type MicrophoneSelection, type Theme } from '../../shared/settings'
 import { toIpcResult } from '../ipc-result'
 import { SettingsError, type SettingsService } from './settings-service'
 
@@ -17,6 +17,10 @@ export function registerSettingsIpc(settings: SettingsService): void {
   )
   ipcMain.handle('settings:accept-system-audio-consent', () =>
     run(() => settings.acceptSystemAudioConsent())
+  )
+  ipcMain.handle('settings:get-microphone', () => run(() => settings.getMicrophone()))
+  ipcMain.handle('settings:set-microphone', (_event, selection: MicrophoneSelection | null) =>
+    run(() => settings.setMicrophone(selection))
   )
   // Tema renderer'da saklanır; main yalnızca native menü, scrollbar ve dialog'lar uysun diye izler.
   ipcMain.handle('settings:set-theme', (_event, theme: Theme) =>

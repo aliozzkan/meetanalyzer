@@ -45,4 +45,44 @@ describe('settings service', () => {
     expect(attempt).toThrow(expect.objectContaining({ code: 'invalid-input' }))
     expect(settings.getDefaultLanguage()).toBe('en')
   })
+
+  it('Mikrofon hiç seçilmediyse null (sistem varsayılanı) döner', () => {
+    const settings = createSettingsService({ db: openDatabase(':memory:') })
+
+    expect(settings.getMicrophone()).toBeNull()
+  })
+
+  it('seçilen Mikrofon uygulama yeniden açılınca korunur; null seçimi siler', () => {
+    const path = tempDbPath()
+    const first = openDatabase(path)
+    createSettingsService({ db: first }).setMicrophone({ deviceId: 'abc', label: 'USB Mic' })
+    first.close()
+
+    const reopened = openDatabase(path)
+    const settings = createSettingsService({ db: reopened })
+    expect(settings.getMicrophone()).toEqual({ deviceId: 'abc', label: 'USB Mic' })
+
+    settings.setMicrophone(null)
+    expect(settings.getMicrophone()).toBeNull()
+    reopened.close()
+  })
+
+  it('geçersiz Mikrofon seçimi reddedilir ve önceki seçim korunur', () => {
+    const settings = createSettingsService({ db: openDatabase(':memory:') })
+    settings.setMicrophone({ deviceId: 'abc', label: 'USB Mic' })
+
+    const attempts = [
+      { deviceId: '', label: 'x' },
+      { deviceId: 'x'.repeat(513), label: 'x' },
+      { deviceId: 'abc', label: 'x'.repeat(257) },
+      { deviceId: 5, label: 'x' },
+      { deviceId: 'abc', label: 5 }
+    ]
+    for (const attempt of attempts) {
+      expect(() => settings.setMicrophone(attempt as never)).toThrow(
+        expect.objectContaining({ code: 'invalid-input' })
+      )
+    }
+    expect(settings.getMicrophone()).toEqual({ deviceId: 'abc', label: 'USB Mic' })
+  })
 })

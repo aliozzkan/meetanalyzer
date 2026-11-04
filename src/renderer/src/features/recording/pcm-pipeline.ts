@@ -6,6 +6,11 @@ import type { AudioSourceHandlers } from './audio-source'
 export interface PcmPipeline {
   /** Akışı kapatır; kalan sesi son bir parça olarak gönderdikten sonra çözülür. */
   stop: () => Promise<void>
+  /**
+   * Aynı hatta yeni bir akış bağlar, eskisini kapatır (ör. mikrofon koptu, varsayılan cihaza geçildi). Akışın
+   * sahipliği devralınır. İki akış arasında hat sessizlik üretir; böylece zaman çizgisi bozulmaz.
+   */
+  replaceStream: (next: MediaStream) => void
 }
 
 const CHUNK_SAMPLES = (AUDIO_FORMAT.sampleRate * PCM_CHUNK_MS) / 1000
@@ -21,8 +26,11 @@ export async function startPcmPipeline(
   let context: AudioContext | undefined
   let node: AudioWorkletNode
 
+  let current = stream
+  let sourceNode: MediaStreamAudioSourceNode | undefined
+
   const release = async (): Promise<void> => {
-    stream.getTracks().forEach((track) => track.stop())
+    current.getTracks().forEach((track) => track.stop())
     await context?.close()
   }
 
@@ -70,10 +78,20 @@ export async function startPcmPipeline(
   }
 
   // İşlemci çıkışa sıfır yazar; hedefe bağlamak yalnızca ses grafiğinin işlenmesini sağlar (sessiz).
-  context.createMediaStreamSource(stream).connect(node)
+  sourceNode = context.createMediaStreamSource(stream)
+  sourceNode.connect(node)
   node.connect(context.destination)
 
   return {
+    replaceStream(next) {
+      const previousSource = sourceNode
+      const previous = current
+      current = next
+      sourceNode = context?.createMediaStreamSource(next)
+      sourceNode?.connect(node)
+      previousSource?.disconnect()
+      previous.getTracks().forEach((track) => track.stop())
+    },
     async stop() {
       const flushed = new Promise<void>((resolve) => {
         onFlushed = resolve

@@ -257,6 +257,13 @@ export function createRecorderController(deps: RecorderDeps): RecorderController
           update({ level: peak, elapsedMs, silent: monitor.feed(peak, durationMs) })
         else update({ systemLevel: peak, elapsedMs })
       },
+      onSwitched: () => {
+        // Kaynak yeni bir cihaza geçti: sessiz mikrofon sayacı yeni cihaz için baştan başlar.
+        if (channel === 'mic') {
+          monitor.reset()
+          update({ silent: false })
+        }
+      },
       onEnded: () => {
         // Kullanıcı ya da önceki bir kopma zaten durdurduysa yok sayılır.
         if (active !== capture || finishing) return

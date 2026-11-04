@@ -6,7 +6,7 @@ import { paths } from '../paths'
 
 export function MeetingPage(): React.JSX.Element {
   const { meetingId = '' } = useParams()
-  const { meetings, model, transcription, recorder, removeMeeting } = useAppContext()
+  const { meetings, model, transcription, recorder, microphone, removeMeeting } = useAppContext()
   const navigate = useNavigate()
 
   // Silinmiş ya da hiç olmamış bir Meeting'in adresi (ör. eski yer imi) Home'a döner.
@@ -24,6 +24,7 @@ export function MeetingPage(): React.JSX.Element {
         api={meetings}
         transcription={transcription}
         recorder={recorder}
+        microphone={microphone}
         meetingId={meetingId}
         onRemove={async (id) => {
           if (await removeMeeting(id)) void navigate(paths.home, { replace: true })

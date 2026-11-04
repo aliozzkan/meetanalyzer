@@ -1,7 +1,8 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
+import type { MicrophoneSelection } from '@shared/settings'
 import { createMacLoopbackSource } from './mac-loopback-source'
-import { createMicSource } from './mic-source'
+import { createMicSource, type MicFallback } from './mic-source'
 import {
   createRecorderController,
   type RecorderController,
@@ -15,13 +16,28 @@ export interface Recorder extends RecorderSnapshot {
   stopQuietly: () => Promise<void>
 }
 
+function fallbackMessage(event: MicFallback): string {
+  return event.reason === 'not-found'
+    ? `${event.label || 'Seçili mikrofon'} bulunamadı, sistem varsayılanı mikrofon kullanıldı.`
+    : 'Mikrofon kesildi, varsayılan mikrofona geçildi.'
+}
+
 // Uygulama kabuğunda (yönlendirmenin üstünde) bir kez çağrılır: ekranlar arası gezinmek Recording'i durdurmaz.
-// `onRecordingsChanged` kararlı olmalıdır (controller ilk render'daki değeri saklar).
-export function useRecorder(onRecordingsChanged: () => void | Promise<void>): Recorder {
+// `onRecordingsChanged` ve `getMicrophone` kararlı olmalıdır (controller ilk render'daki değerleri saklar).
+export function useRecorder(
+  onRecordingsChanged: () => void | Promise<void>,
+  getMicrophone: () => MicrophoneSelection | null
+): Recorder {
   const [controller] = useState<RecorderController>(() =>
     createRecorderController({
       recordings: window.api.recordings,
-      createSources: () => ({ mic: createMicSource(), system: createMacLoopbackSource() }),
+      createSources: () => ({
+        mic: createMicSource({
+          selection: getMicrophone(),
+          onFallback: (event) => toast.info(fallbackMessage(event))
+        }),
+        system: createMacLoopbackSource()
+      }),
       notifyError: (message) => toast.error(message),
       onRecordingsChanged: () => void onRecordingsChanged()
     })

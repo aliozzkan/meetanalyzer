@@ -12,6 +12,8 @@ import { IS_MAC } from '@renderer/lib/platform'
 import { cn } from '@renderer/lib/utils'
 import { LANGUAGE_LABELS } from '../meetings/labels'
 import { ModelSection } from '../model/model-section'
+import { MicrophoneSelect } from '../recording/microphone-select'
+import type { MicrophoneApi } from '../recording/use-microphone'
 import type { ModelApi } from '../model/use-model'
 import { SECTION_LABELS, THEME_LABELS } from './labels'
 import type { DefaultLanguageApi } from './use-default-language'
@@ -21,6 +23,7 @@ import { useTheme } from './use-theme'
 interface Props {
   dialog: SettingsDialogApi
   language: DefaultLanguageApi
+  microphone: MicrophoneApi
   model: ModelApi
   /** Model silme kuralı için (kuyrukta Meeting varken silinemez). */
   transcription: TranscriptionStatus
@@ -30,6 +33,7 @@ interface Props {
 export function SettingsDialog({
   dialog,
   language,
+  microphone,
   model,
   transcription
 }: Props): React.JSX.Element {
@@ -60,7 +64,9 @@ export function SettingsDialog({
         </nav>
         <div className="flex min-h-0 flex-col gap-6 overflow-y-auto p-6 pr-12">
           <h2 className="font-heading text-lg font-semibold">{SECTION_LABELS[dialog.section]}</h2>
-          {dialog.section === 'general' && <GeneralSection language={language} />}
+          {dialog.section === 'general' && (
+            <GeneralSection language={language} microphone={microphone} />
+          )}
           {dialog.section === 'model' && (
             <ModelSection model={model} transcription={transcription} />
           )}
@@ -71,7 +77,13 @@ export function SettingsDialog({
   )
 }
 
-function GeneralSection({ language }: { language: DefaultLanguageApi }): React.JSX.Element {
+function GeneralSection({
+  language,
+  microphone
+}: {
+  language: DefaultLanguageApi
+  microphone: MicrophoneApi
+}): React.JSX.Element {
   const { theme, setTheme } = useTheme()
 
   return (
@@ -105,6 +117,15 @@ function GeneralSection({ language }: { language: DefaultLanguageApi }): React.J
           ))}
         </NativeSelect>
         <FieldDescription>Yeni Meeting&apos;lere bu dil önerilir.</FieldDescription>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="settings-microphone">Mikrofon</FieldLabel>
+        <MicrophoneSelect microphone={microphone} id="settings-microphone" />
+        <FieldDescription>
+          {microphone.labelsAvailable
+            ? 'Kayıtlar bu mikrofonla alınır. Cihaz bağlı değilse sistem varsayılanı kullanılır.'
+            : 'Cihaz adları mikrofon izni verildikten sonra (ilk kayıttan sonra) görünür. Şimdilik sistem varsayılanı kullanılır.'}
+        </FieldDescription>
       </Field>
     </>
   )

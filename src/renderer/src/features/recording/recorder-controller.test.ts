@@ -340,6 +340,22 @@ describe('createRecorderController', () => {
     expect(controller.getSnapshot().silent).toBe(false)
   })
 
+  it('mikrofon başka bir cihaza geçince sessizlik sayacı yeni cihaz için baştan başlar; Recording sürer', async () => {
+    const { controller, handlers } = createHarness()
+    await controller.start('m-1')
+    const quiet = SILENT_MIC_PEAK_THRESHOLD / 10
+
+    handlers.current?.onLevel(quiet, SILENT_MIC_WARNING_MS)
+    expect(controller.getSnapshot().silent).toBe(true)
+
+    handlers.current?.onSwitched?.()
+    expect(controller.getSnapshot()).toMatchObject({ state: 'recording', silent: false })
+    handlers.current?.onLevel(quiet, SILENT_MIC_WARNING_MS - 1)
+    expect(controller.getSnapshot().silent).toBe(false)
+    handlers.current?.onLevel(quiet, 1)
+    expect(controller.getSnapshot().silent).toBe(true)
+  })
+
   it('yeni Recording süreyi sıfırdan sayar', async () => {
     const { controller, handlers } = createHarness()
     await controller.start('m-1')
