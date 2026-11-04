@@ -12,7 +12,7 @@ import type { TranscriptionStatus } from '../shared/transcription'
 import type { RecordingResult, RecordingSummary } from '../shared/recording'
 import type { AppCommand, AppInfo } from '../shared/app'
 import type { AudioChannel } from '../shared/audio'
-import type { SettingsResult, Theme } from '../shared/settings'
+import type { MicrophoneSelection, SettingsResult, Theme } from '../shared/settings'
 
 // Custom APIs for renderer
 const api = {
@@ -96,6 +96,10 @@ const api = {
       ipcRenderer.invoke('settings:get-system-audio-consent'),
     acceptSystemAudioConsent: (): Promise<SettingsResult<void>> =>
       ipcRenderer.invoke('settings:accept-system-audio-consent'),
+    getMicrophone: (): Promise<SettingsResult<MicrophoneSelection | null>> =>
+      ipcRenderer.invoke('settings:get-microphone'),
+    setMicrophone: (selection: MicrophoneSelection | null): Promise<SettingsResult<void>> =>
+      ipcRenderer.invoke('settings:set-microphone', selection),
     setTheme: (theme: Theme): Promise<SettingsResult<void>> =>
       ipcRenderer.invoke('settings:set-theme', theme)
   },

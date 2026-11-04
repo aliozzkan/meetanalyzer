@@ -2,6 +2,7 @@ import { useOutletContext } from 'react-router'
 import type { MeetingsApi } from '../features/meetings/use-meetings'
 import type { NewMeetingApi } from '../features/meetings/use-new-meeting'
 import type { ModelApi } from '../features/model/use-model'
+import type { MicrophoneApi } from '../features/recording/use-microphone'
 import type { Recorder } from '../features/recording/use-recorder'
 import type { DefaultLanguageApi } from '../features/settings/use-default-language'
 import type { TranscriptionApi } from '../features/transcription/use-transcription'
@@ -12,6 +13,7 @@ export interface AppContext {
   model: ModelApi
   transcription: TranscriptionApi
   recorder: Recorder
+  microphone: MicrophoneApi
   defaultLanguage: DefaultLanguageApi
   newMeeting: NewMeetingApi
   /** Kayıt sürüyorsa önce Recording'i bitirir, sonra Meeting'i siler. */

@@ -9,6 +9,10 @@ declare class AudioWorkletProcessor {
 declare function registerProcessor(name: string, processor: new () => AudioWorkletProcessor): void
 
 const BLOCK_SAMPLES = 4096
+// Web Audio'nun işleme dilimi. Giriş bağlı değilken (ör. mikrofon koptu, yenisi henüz açılmadı) `inputs[0]` boştur;
+// bu süre sessizlikle doldurulur ki kanalın zaman çizgisi `AudioContext` saatiyle ilerlesin.
+const RENDER_QUANTUM = 128
+const SILENCE = new Float32Array(RENDER_QUANTUM)
 
 class PcmCaptureProcessor extends AudioWorkletProcessor {
   private block = new Float32Array(BLOCK_SAMPLES)
@@ -26,8 +30,7 @@ class PcmCaptureProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs: Float32Array[][]): boolean {
-    const channel = inputs[0]?.[0]
-    if (!channel) return true
+    const channel = inputs[0]?.[0] ?? SILENCE
 
     let offset = 0
     while (offset < channel.length) {

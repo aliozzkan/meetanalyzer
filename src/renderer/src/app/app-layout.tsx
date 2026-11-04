@@ -6,6 +6,7 @@ import { useNewMeeting } from '../features/meetings/use-new-meeting'
 import { HeaderModelIndicator } from '../features/model/header-model-indicator'
 import { useModel } from '../features/model/use-model'
 import { isBusyWith } from '../features/recording/recorder-controller'
+import { useMicrophone } from '../features/recording/use-microphone'
 import { useRecorder } from '../features/recording/use-recorder'
 import { SettingsDialog } from '../features/settings/settings-dialog'
 import { useDefaultLanguage } from '../features/settings/use-default-language'
@@ -32,7 +33,8 @@ export function AppLayout(): React.JSX.Element {
   const meetings = useMeetings()
   const model = useModel()
   const transcription = useTranscription(model, meetings.refresh)
-  const recorder = useRecorder(meetings.refresh)
+  const microphone = useMicrophone()
+  const recorder = useRecorder(meetings.refresh, microphone.getSelection)
   const defaultLanguage = useDefaultLanguage()
   const settings = useSettingsDialog()
   const newMeeting = useNewMeeting(meetings, defaultLanguage)
@@ -56,6 +58,7 @@ export function AppLayout(): React.JSX.Element {
     model,
     transcription,
     recorder,
+    microphone,
     defaultLanguage,
     newMeeting,
     removeMeeting
@@ -127,6 +130,7 @@ export function AppLayout(): React.JSX.Element {
         <SettingsDialog
           dialog={settings}
           language={defaultLanguage}
+          microphone={microphone}
           model={model}
           transcription={transcription.status}
         />

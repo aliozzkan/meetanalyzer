@@ -24,6 +24,11 @@ export interface AudioSourceHandlers {
    * ve `start()` hata verdiyse çağrılmaz; açılışta kopma `start()`'ın hatasıdır.
    */
   onEnded: () => void
+  /**
+   * Kaynak kesilmeden başka bir cihaza geçti (ör. mikrofon çıkarıldı, varsayılana geçildi). Sessizlik gibi
+   * cihaza bağlı sayaçlar sıfırlanır; Recording sürer.
+   */
+  onSwitched?: () => void
 }
 
 export interface AudioSource {

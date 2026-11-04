@@ -5,19 +5,22 @@ import { Button } from '@renderer/components/ui/button'
 import { Progress } from '@renderer/components/ui/progress'
 import { PLATFORM } from '@renderer/lib/platform'
 import { formatElapsed } from './format-elapsed'
+import { MicrophoneSelect } from './microphone-select'
 import { microphonePermissionCopy } from './microphone-permission'
 import { isBusyWith } from './recorder-controller'
+import type { MicrophoneApi } from './use-microphone'
 import type { Recorder } from './use-recorder'
 
 const permissionCopy = microphonePermissionCopy(PLATFORM)
 
 interface Props {
   recorder: Recorder
+  microphone: MicrophoneApi
   /** Kontrollerin ait olduğu Meeting; recorder uygulama genelindedir, başka bir Meeting'de de kayıt sürüyor olabilir. */
   meetingId: string
 }
 
-export function RecordingControls({ recorder, meetingId }: Props): React.JSX.Element {
+export function RecordingControls({ recorder, microphone, meetingId }: Props): React.JSX.Element {
   // Recorder uygulama genelinde tek; yalnızca bu Meeting'in kaydıysa durumunu yansıtırız.
   const here = isBusyWith(recorder, meetingId)
   const busy = here && (recorder.state === 'starting' || recorder.state === 'stopping')
@@ -39,9 +42,18 @@ export function RecordingControls({ recorder, meetingId }: Props): React.JSX.Ele
             <SquareIcon /> Kaydı durdur
           </Button>
         ) : (
-          <Button onClick={start} disabled={busy || busyElsewhere}>
-            <MicIcon /> Kaydı başlat
-          </Button>
+          <>
+            <Button onClick={start} disabled={busy || busyElsewhere}>
+              <MicIcon /> Kaydı başlat
+            </Button>
+            {/* Cihaz yalnızca kayıt başlamadan seçilir; sürerken değiştirilemez. */}
+            <MicrophoneSelect
+              microphone={microphone}
+              size="sm"
+              className="max-w-56"
+              disabled={busy || busyElsewhere}
+            />
+          </>
         )}
         {recording && (
           <span className="font-mono text-lg tabular-nums" aria-label="Kayıt süresi">

@@ -8,6 +8,8 @@ export interface SilenceMonitorOptions {
 export interface SilenceMonitor {
   /** Bir ses parçasının tepe seviyesini ve süresini bildirir; uyarının açık olup olmadığını döndürür. */
   feed: (peak: number, durationMs: number) => boolean
+  /** Sessizlik sayacını sıfırlar (ör. kaynak başka bir cihaza geçti). */
+  reset: () => void
 }
 
 // Süre, gerçek saat yerine beslenen ses parçalarının süresinden hesaplanır; böylece deterministiktir.
@@ -20,6 +22,9 @@ export function createSilenceMonitor({
     feed(peak, durationMs) {
       silentMs = peak < peakThreshold ? silentMs + durationMs : 0
       return silentMs >= silenceMs
+    },
+    reset() {
+      silentMs = 0
     }
   }
 }

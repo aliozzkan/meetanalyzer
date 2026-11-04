@@ -29,7 +29,7 @@ Recording ──► Closed ──► Transcribing ──► Transcribed ──�
 ## Geçiş kuralları
 
 - Aynı anda en fazla bir Meeting Recording durumunda olabilir.
-- **Recording sırasında kopma:** Recording'in kaynaklarından biri (mikrofon ya da sistem sesi) kayıt sürerken kopar ve Recording kendiliğinden biterse o ana kadarki kısım korunur; Meeting Recording durumunda kalır ve kullanıcı yeni bir Recording başlatabilir.
+- **Recording sırasında kopma:** Sistem sesi kayıt sürerken koparsa ya da mikrofon koptuktan sonra sistem varsayılanı mikrofon da açılamazsa Recording kendiliğinden biter ve o ana kadarki kısım korunur; Meeting Recording durumunda kalır ve kullanıcı yeni bir Recording başlatabilir. Kullanılan mikrofon koptuğunda varsayılan mikrofon açılabiliyorsa Recording **bitmez**: mikrofon kanalı varsayılan mikrofona geçer ve kopma süresi sessizlikle doldurulur (iki kanalın zaman çizgisi bozulmaz).
 - **Recording → Closed:** Kullanıcı toplantı bittiğinde Meeting'i kapatır. Dönüş yoktur. Hiç Recording'i olmayan Meeting kapatılamaz; silinir.
 - **Closed → Transcribing:** Kullanıcı Transcription'ı elle başlatır; Meeting Transcription Queue'ya girer. Transcription toplantı sırasında kendiliğinden başlamaz, ama kullanıcı başlattıysa yeni bir Meeting'in Recording'i sürerken de arka planda devam eder.
 - **Transcribing → Transcribed:** Meeting'in tüm Recording'leri transcribe edildi.

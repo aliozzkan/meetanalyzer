@@ -6,6 +6,7 @@ import { TranscriptView } from '../correction/transcript-view'
 import { useTranscript } from '../correction/use-transcript'
 import { RecordingControls } from '../recording/recording-controls'
 import { isBusyWith } from '../recording/recorder-controller'
+import type { MicrophoneApi } from '../recording/use-microphone'
 import type { Recorder } from '../recording/use-recorder'
 import { formatMeetingDate } from './format-date'
 import { LANGUAGE_LABELS, STATE_LABELS } from './labels'
@@ -19,6 +20,7 @@ interface Props {
   api: MeetingsApi
   transcription: TranscriptionApi
   recorder: Recorder
+  microphone: MicrophoneApi
   meetingId: string
   /** Silme onaylandı; çağıran önce Recording'i bitirir, sonra siler ve ekrandan çıkar. */
   onRemove: (id: string) => Promise<void>
@@ -28,6 +30,7 @@ export function MeetingDetail({
   api,
   transcription,
   recorder,
+  microphone,
   meetingId,
   onRemove
 }: Props): React.JSX.Element {
@@ -77,7 +80,11 @@ export function MeetingDetail({
             <CardContent className="flex flex-col gap-4">
               {meeting.recordingCount === 0 && <p>Bu Meeting’de henüz kayıt yok.</p>}
               {meeting.state === 'recording' && (
-                <RecordingControls recorder={recorder} meetingId={meeting.id} />
+                <RecordingControls
+                  recorder={recorder}
+                  microphone={microphone}
+                  meetingId={meeting.id}
+                />
               )}
             </CardContent>
           </Card>
